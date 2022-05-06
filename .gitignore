@@ -1,3 +1,7 @@
 .token
 database/main
 database/main.dSYM
+alpaca/bazel-out
+alpaca/bazel-bin
+alpaca/bazel-alpaca
+alpaca/bazel-testlogs
