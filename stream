@@ -1,0 +1,83 @@
+#!/usr/bin/python3
+import asyncio
+import pymongo
+
+from tda.auth import client_from_token_file
+from tda.client import Client
+from tda.streaming import StreamClient
+
+from dotenv import dotenv_values
+
+config = dotenv_values()
+
+API_KEY = config["TDA_CLIENT_KEY"]
+ACCOUNT_ID = config["TDA_ACCOUNT_ID"]
+TOKEN_PATH = config["TOKEN_PATH"]
+MONGO_HOST = config["MONGO_DB_HOST"]
+MONGO_PORT = int(config["MONGO_DB_PORT"])
+MONGO_USERNAME = config["MONGO_DB_USERNAME"]
+MONGO_PASSWORD = config["MONGO_DB_PASSWORD"]
+
+tickers = ['AAPL', 'SPY', 'TWTR', 'GOOGL', 'MSFT', 'TSLA']
+
+class Stream:
+    def __init__(self, api_key, account_id, queue_size=0,
+                 credentials_path=TOKEN_PATH):
+        self.api_key = api_key
+        self.account_id = account_id
+        self.credentials_path = credentials_path
+        self.tda_client = None
+        self.stream_client = None
+        self.symbols = tickers
+        self.collections = {}
+
+        self.queue = asyncio.Queue(queue_size)
+
+    def initialize(self):
+        mongodb = pymongo.MongoClient(host=MONGO_HOST, port=MONGO_PORT, username=MONGO_USERNAME, password=MONGO_PASSWORD, authSource=MONGO_USERNAME)
+        self.database = mongodb['stock_data']
+        for symbol in tickers:
+            collection = self.database[symbol]
+            collection.drop()
+            self.collections[symbol] = collection
+            
+        self.tda_client = client_from_token_file(
+            api_key=self.api_key,
+            token_path=self.credentials_path)
+        self.stream_client = StreamClient(
+            self.tda_client, account_id=self.account_id)
+
+        self.stream_client.add_level_one_equity_handler(
+            self.handle_quotes)
+
+    async def stream(self):
+        await self.stream_client.login()
+        await self.stream_client.quality_of_service(StreamClient.QOSLevel.EXPRESS)
+        await self.stream_client.level_one_equity_subs(self.symbols)
+
+        asyncio.ensure_future(self.handle_queue())
+
+        while True:
+            await self.stream_client.handle_message()
+
+    async def handle_quotes(self, msg):
+        if self.queue.full():  # This won't happen if the queue doesn't have a max size
+            print('Handler queue is full. Awaiting to make room... Some messages might be dropped')
+            await self.queue.get()
+        await self.queue.put(msg)
+
+    async def handle_queue(self):
+        while True:
+            msg = await self.queue.get()
+            for message in msg['content']:
+                collection_ = self.collections[message['key']]                
+                collection_.insert_one(message)
+                print(message)
+
+async def main():
+    consumer = Stream(API_KEY, ACCOUNT_ID)
+    consumer.initialize()
+    await consumer.stream()
+
+if __name__ == '__main__':
+    asyncio.run(main())

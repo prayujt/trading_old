@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
 	for (int i = 0; i < argc; ++i) {
 		std::cout << argv[i] << std::endl;
 	}
-	system("./main2");
+	//system("./main2");
 	
   auto env = alpaca::Environment();
   if (auto status = env.parse(); !status.ok()) {
