@@ -12,7 +12,7 @@ endif
 MAKE_CMD = $(CC) $(CFLAGS) -o $(TARGET) $(SOURCES)
 
 ifeq ($(UNAME_S),Linux)
-	MAKE_CMD += /usr/local/lib/libmongocxx.so.3.6.7 /usr/local/lib/libbsoncxx.so.3.6.7
+	MAKE_CMD += /usr/local/lib/libmongocxx.so /usr/local/lib/libbsoncxx.so
 endif
 
 all:
