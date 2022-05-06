@@ -54,7 +54,7 @@ class Stream:
     async def stream(self):
         await self.stream_client.login()
         await self.stream_client.quality_of_service(StreamClient.QOSLevel.EXPRESS)
-        await self.stream_client.level_one_equity_subs(self.symbols, [
+        await self.stream_client.level_one_equity_subs(symbols=self.symbols, fields=[
             self.stream_client.LevelOneEquityFields.ASK_PRICE,
             self.stream_client.LevelOneEquityFields.ASK_SIZE,
             self.stream_client.LevelOneEquityFields.BID_PRICE,
@@ -80,9 +80,14 @@ class Stream:
         while True:
             msg = await self.queue.get()
             for message in msg['content']:
-                collection_ = self.collections[message['key']]
-                collection_.insert_one(message)
-                print(message)
+                if "LAST_PRICE" in message:
+                    time = datetime.now()
+                    message["HOUR"] = time.hour
+                    message["MINUTE"] = time.minute
+                    message["SECOND"] = time.second
+                    collection_ = self.collections[message['key']]
+                    collection_.insert_one(message)
+                    print(message)
 
 async def main():
     consumer = Stream(API_KEY, ACCOUNT_ID)
