@@ -3,7 +3,7 @@ CFLAGS = -std=c++11 -w -g -I/usr/local/include/mongocxx/v_noabi -I/usr/local/inc
 UNAME_S := $(shell uname -s)
 
 TARGET = main
-SOURCES := main.cpp
+SOURCES := *.cpp
 
 ifeq ($(UNAME_S),Darwin)
 	CFLAGS += -lmongocxx -lbsoncxx

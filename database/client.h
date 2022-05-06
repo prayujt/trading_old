@@ -1,16 +1,31 @@
+#include <stdlib.h>
 #include <string>
-#include <mongocxx/client.hpp>
+#include <iostream>
 
-using namespace std;
+#include <mongocxx/client.hpp>
+#include <mongocxx/stdx.hpp>
+#include <mongocxx/uri.hpp>
+#include <mongocxx/instance.hpp>
+#include <bsoncxx/json.hpp>
+#include <bsoncxx/builder/stream/helpers.hpp>
+#include <bsoncxx/builder/stream/document.hpp>
+#include <bsoncxx/builder/stream/array.hpp>
+
+using bsoncxx::builder::stream::close_array;
+using bsoncxx::builder::stream::close_document;
+using bsoncxx::builder::stream::document;
+using bsoncxx::builder::stream::finalize;
+using bsoncxx::builder::stream::open_array;
+using bsoncxx::builder::stream::open_document;
 
 struct Bar {
+    std::string ticker;
     float open, close, low, high;
-    unsigned short day, month, year, hour, minute, second;
-    Bar(unsigned short day, unsigned short month, unsigned short year, unsigned short hour, unsigned short minute);
+    unsigned short hour, minute;
+    Bar(std::string ticker, unsigned short hour, unsigned short minute);
 };
 
 struct Client {
-    Bar get_bars(string ticker, unsigned short day, unsigned short month, unsigned short year, unsigned short hour, unsigned short minute);
-    private:
-        void query_database(string query);
+    Bar get_bars(std::string ticker, unsigned short hour, unsigned short minute);
+    void query_database(std::string query);
 };
