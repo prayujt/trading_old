@@ -18,8 +18,17 @@ MONGO_HOST = config["MONGO_DB_HOST"]
 MONGO_PORT = int(config["MONGO_DB_PORT"])
 MONGO_USERNAME = config["MONGO_DB_USERNAME"]
 MONGO_PASSWORD = config["MONGO_DB_PASSWORD"]
+TICKER_PATH = config["TICKER_PATH"]
 
-tickers = ['AAPL', 'SPY', 'TWTR', 'GOOGL', 'MSFT', 'TSLA']
+tickers = []
+ticker_file = open(TICKER_PATH)
+ticker_lines = ticker_file.readlines()
+ticker_file.close()
+
+for ticker in ticker_lines:
+    tickers.append(ticker)
+
+print(tickers)
 
 class Stream:
     def __init__(self, api_key, account_id, queue_size=0,

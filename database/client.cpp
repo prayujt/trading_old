@@ -1,18 +1,46 @@
 #include "client.h"
 
-
-void Client::query_database(std::string query) {
+Client::Client() {
   std::string uri = getenv("MONGO_DB_URI");
   std::string database = getenv("MONGO_DB_DATABASE");
 
-  mongocxx::instance inst{};
-  mongocxx::client conn{
+  client_ = mongocxx::client{
     mongocxx::uri{uri}
   };
-  mongocxx::database db = conn[database];
-  mongocxx::collection collection = db["AAPL"];
+  database_ = client_[database];
+}
+
+void Client::query_database(std::string collection_name, std::unordered_map<std::string, std::any> query) {
+  mongocxx::collection collection = database_[collection_name];
+  auto doc = document{};
+  for (auto i = query.begin(); i != query.end(); i++) {
+    std::any temp = i->second;
+    try {
+      int value = std::any_cast<int>(temp);
+      doc.append(kvp(i->first, value));
+    }
+    catch (const std::bad_any_cast& e) {
+    }
+
+    try {
+      double value = std::any_cast<double>(temp);
+      doc.append(kvp(i->first, value));
+    }
+    catch (const std::bad_any_cast& e) {
+    }
+
+    try {
+      std::string value = std::any_cast<std::string>(temp);
+      doc.append(kvp(i->first, value));
+    }
+    catch (const std::bad_any_cast& e) {
+    }
+
+  }
+  auto v = doc.view();
+
   mongocxx::cursor cursor = collection.find(
-      document{} << "BID_PRICE" << 155.86 << finalize
+      doc.extract()
   );
   for (auto doc : cursor) {
     std::cout << bsoncxx::to_json(doc) << "\n";

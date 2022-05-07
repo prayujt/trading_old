@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -std=c++11 -w -g -I/usr/local/include/mongocxx/v_noabi -I/usr/local/include/bsoncxx/v_noabi
+CFLAGS = -std=c++17 -w -g -I/usr/local/include/mongocxx/v_noabi -I/usr/local/include/bsoncxx/v_noabi
 UNAME_S := $(shell uname -s)
 
 TARGET = main

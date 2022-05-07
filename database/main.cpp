@@ -1,13 +1,17 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string>
+#include <unordered_map>
+#include <any>
 
 #include "client.h"
 
 int main(int argc, char* argv[]) {
-  Bar bar("SPY", 5, 5);
-  std::cout << bar.ticker << std::endl;
   Client client;
-  client.query_database("test");
+  std::unordered_map<std::string, std::any> query{
+    {"LAST_PRICE", 156.84},
+    {"SECOND", 34},
+  };
+  client.query_database("AAPL", query);
   return 0;
 }
