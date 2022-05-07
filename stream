@@ -2,6 +2,7 @@
 import asyncio
 import pymongo
 from datetime import datetime
+import sys
 
 from tda.auth import client_from_token_file
 from tda.client import Client
@@ -89,6 +90,8 @@ class Stream:
             for message in msg['content']:
                 if "LAST_PRICE" in message:
                     time = datetime.now()
+                    if time.hour >= 16 and time.minute >= 0:
+                        sys.exit()
                     message["HOUR"] = time.hour
                     message["MINUTE"] = time.minute
                     message["SECOND"] = time.second
