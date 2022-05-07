@@ -26,9 +26,7 @@ ticker_lines = ticker_file.readlines()
 ticker_file.close()
 
 for ticker in ticker_lines:
-    tickers.append(ticker)
-
-print(tickers)
+    tickers.append(ticker.strip())
 
 class Stream:
     def __init__(self, api_key, account_id, queue_size=0,
