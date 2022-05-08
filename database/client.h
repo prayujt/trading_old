@@ -42,5 +42,5 @@ struct Client {
     Client();
 
     std::vector<bsoncxx::document::view> query_database(std::string collection_name, std::unordered_map<std::string, std::any> query);
-    std::vector<bsoncxx::document::view> complex_query_database(std::string collection_name, std::unordered_map<std::string, std::any> query, std::unordered_map<std::string, const std::string> operators);
+    std::vector<bsoncxx::document::view> complex_query_database(std::string collection_name, std::unordered_map<std::string, std::any> query, std::unordered_map<unsigned int, const std::string> operators);
 };

@@ -15,16 +15,18 @@ std::vector<bsoncxx::document::view> Client::query_database(std::string collecti
   return complex_query_database(collection_name, query, empty);
 }
 
-std::vector<bsoncxx::document::view> Client::complex_query_database(std::string collection_name, std::unordered_map<std::string, std::any> query, std::unordered_map<std::string, const std::string> operators) {
+std::vector<bsoncxx::document::view> Client::complex_query_database(std::string collection_name, std::unordered_map<std::string, std::any> query, std::unordered_map<unsigned int, const std::string> operators) {
   std::vector<bsoncxx::document::view> documents;
   mongocxx::collection collection = database_[collection_name];
   auto doc = document{};
+  unsigned int counter = 0;
   for (auto i = query.begin(); i != query.end(); i++) {
     std::any temp = i->second;
+    for (auto i = )
     try {
       unsigned short value = std::any_cast<unsigned short>(temp);
-      if (operators.count(i->first) != 0) {
-        doc.append(kvp(i->first, make_document(kvp(operators.find(i->first)->second, value))));
+      if (operators.count(counter) != 0) {
+        doc.append(kvp(i->first, make_document(kvp(operators.find(counter)->second, value))));
       }
       else doc.append(kvp(i->first, value));
     } catch (const std::bad_any_cast& e) {
@@ -34,7 +36,7 @@ std::vector<bsoncxx::document::view> Client::complex_query_database(std::string 
     try {
       int value = std::any_cast<int>(temp);
       if (operators.count(i->first) != 0) {
-        doc.append(kvp(i->first, make_document(kvp(operators.find(i->first)->second, value))));
+        doc.append(kvp(i->first, make_document(kvp(operators.find(counter)->second, value))));
       }
       else doc.append(kvp(i->first, value));
     } catch (const std::bad_any_cast& e) {
@@ -44,7 +46,7 @@ std::vector<bsoncxx::document::view> Client::complex_query_database(std::string 
     try {
       double value = std::any_cast<double>(temp);
       if (operators.count(i->first) != 0) {
-        doc.append(kvp(i->first, make_document(kvp(operators.find(i->first)->second, value))));
+        doc.append(kvp(i->first, make_document(kvp(operators.find(counter)->second, value))));
       }
       else doc.append(kvp(i->first, value));
     } catch (const std::bad_any_cast& e) {
@@ -54,12 +56,13 @@ std::vector<bsoncxx::document::view> Client::complex_query_database(std::string 
     try {
       std::string value = std::any_cast<std::string>(temp);
       if (operators.count(i->first) != 0) {
-        doc.append(kvp(i->first, make_document(kvp(operators.find(i->first)->second, value))));
+        doc.append(kvp(i->first, make_document(kvp(operators.find(counter)->second, value))));
       }
       else doc.append(kvp(i->first, value));
     } catch (const std::bad_any_cast& e) {
       // std::cout << "bad_any_cast string" << std::endl;
     }
+    counter++;
   }
 
   mongocxx::cursor cursor = collection.find(
@@ -106,7 +109,7 @@ std::vector<Bar*> Client::get_bars(std::string ticker, unsigned short hour_start
       {"HOUR", hour_start},
       {"MINUTE", minute}
     };
-    std::unordered_map<std::string, const std::string> operators{
+    std::unordered_map<int, const std::string> operators{
     {"MINUTE", LESS_THAN} //TODO: Allow for range (eg. x <= MINUTE <= y)
     };
   }

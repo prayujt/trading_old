@@ -15,16 +15,16 @@ int main(int argc, char* argv[]) {
   Bar* bar = client.get_bar("AAPL", 18, 30);
   std::cout << *bar << std::endl;
 
-  // std::unordered_map<std::string, std::any> query{
-  //   {"HOUR", 18},
-  //   {"MINUTE", 16},
-  //   {"LAST_PRICE", 157.05}
-  // };
+  std::unordered_map<std::string, std::any> query{
+    {"HOUR", 18},
+    {"MINUTE", 16},
+    {"LAST_PRICE", 157.05}
+  };
 
-  // std::unordered_map<std::string, const std::string> operators{
-  // {"LAST_PRICE", LESS_THAN}
-  // };
-  // // std::vector<bsoncxx::document::view> result = client.complex_query_database("AAPL", query, operators);
+  std::unordered_map<unsigned int, const std::string> operators{
+  {2, LESS_THAN}
+  };
+  // std::vector<bsoncxx::document::view> result = client.complex_query_database("AAPL", query, operators);
 
   // std::vector<bsoncxx::document::view> result = client.complex_query_database("AAPL", query, operators);
   // for (unsigned int i = 0; i < result.size(); i++) {
