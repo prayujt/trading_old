@@ -11,6 +11,11 @@ Client::Client() {
 }
 
 std::vector<bsoncxx::document::view> Client::query_database(std::string collection_name, std::unordered_map<std::string, std::any> query) {
+  std::unordered_map<std::string, const std::string> empty;
+  return complex_query_database(collection_name, query, empty);
+}
+
+std::vector<bsoncxx::document::view> Client::complex_query_database(std::string collection_name, std::unordered_map<std::string, std::any> query, std::unordered_map<std::string, const std::string> operators) {
   std::vector<bsoncxx::document::view> documents;
   mongocxx::collection collection = database_[collection_name];
   auto doc = document{};
@@ -18,20 +23,42 @@ std::vector<bsoncxx::document::view> Client::query_database(std::string collecti
     std::any temp = i->second;
     try {
       unsigned short value = std::any_cast<unsigned short>(temp);
-      doc.append(kvp(i->first, value));
+      if (operators.count(i->first) != 0) {
+        doc.append(kvp(i->first, make_document(kvp(operators.find(i->first)->second, value))));
+      }
+      else doc.append(kvp(i->first, value));
     } catch (const std::bad_any_cast& e) {
+      // std::cout << "bad_any_cast unsigned short" << std::endl;
+    }
+
+    try {
+      int value = std::any_cast<int>(temp);
+      if (operators.count(i->first) != 0) {
+        doc.append(kvp(i->first, make_document(kvp(operators.find(i->first)->second, value))));
+      }
+      else doc.append(kvp(i->first, value));
+    } catch (const std::bad_any_cast& e) {
+      // std::cout << "bad_any_cast int" << std::endl;
     }
 
     try {
       double value = std::any_cast<double>(temp);
-      doc.append(kvp(i->first, value));
+      if (operators.count(i->first) != 0) {
+        doc.append(kvp(i->first, make_document(kvp(operators.find(i->first)->second, value))));
+      }
+      else doc.append(kvp(i->first, value));
     } catch (const std::bad_any_cast& e) {
+      // std::cout << "bad_any_cast double" << std::endl;
     }
 
     try {
       std::string value = std::any_cast<std::string>(temp);
-      doc.append(kvp(i->first, value));
+      if (operators.count(i->first) != 0) {
+        doc.append(kvp(i->first, make_document(kvp(operators.find(i->first)->second, value))));
+      }
+      else doc.append(kvp(i->first, value));
     } catch (const std::bad_any_cast& e) {
+      // std::cout << "bad_any_cast string" << std::endl;
     }
   }
 
@@ -44,7 +71,7 @@ std::vector<bsoncxx::document::view> Client::query_database(std::string collecti
   return documents;
 }
 
-Bar Client::get_bar(std::string ticker, unsigned short hour, unsigned short minute) {
+Bar* Client::get_bar(std::string ticker, unsigned short hour, unsigned short minute) {
   std::unordered_map<std::string, std::any> query{
     {"HOUR", hour},
     {"MINUTE", minute}
@@ -67,16 +94,33 @@ Bar Client::get_bar(std::string ticker, unsigned short hour, unsigned short minu
     if (last_price < min) min = last_price;
     if (last_price > max) max = last_price;
   }
-  Bar bar(ticker, hour, minute, open, close, min, max);
-  return bar;
+  if (!(min == std::numeric_limits<double>::max() || max == std::numeric_limits<double>::min())) return new Bar(ticker, hour, minute, open, close, min, max);
+  else return NULL;
 }
 
-std::vector<Bar> Client::get_bars(std::string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end) {
-  std::vector<Bar> bars;
+std::vector<Bar*> Client::get_bars(std::string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end) {
+  std::vector<Bar*> bars;
+  std::vector<bsoncxx::document::view> result;
+  if (hour_start == hour_end) {
+    std::unordered_map<std::string, std::any> query{
+      {"HOUR", hour_start},
+      {"MINUTE", minute}
+    };
+    std::unordered_map<std::string, const std::string> operators{
+    {"MINUTE", LESS_THAN} //TODO: Allow for range (eg. x <= MINUTE <= y)
+    };
+  }
+  std::unordered_map<std::string, std::any> query{
+    {"HOUR", hour},
+    {"MINUTE", minute}
+  };
+  std::unordered_map<std::string, const std::string> operators{
+  {"HOUR", LESS_THAN}
+  };
   for (unsigned short i = hour_start; i <= hour_end; i++) {
     for (unsigned short j = minute_start; j <= ((hour_end - hour_start) * 60) + minute_end; j++) {
-      Bar bar = get_bar(ticker, i, j % 60);
-      if (!(bar.low == std::numeric_limits<double>::max() || bar.high == std::numeric_limits<double>::min())) bars.push_back(bar);
+      Bar* bar = get_bar(ticker, i, j % 60);
+      if (bar != NULL) bars.push_back(bar);
     }
   }
   return bars;

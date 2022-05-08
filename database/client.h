@@ -19,6 +19,12 @@
 
 using bsoncxx::builder::basic::document;
 using bsoncxx::builder::basic::kvp;
+using bsoncxx::builder::basic::make_document;
+
+const std::string GREATER_THAN = "$gt";
+const std::string LESS_THAN = "$lt";
+const std::string GREATER_THAN_EQ = "$gte";
+const std::string LESS_THAN_EQ = "$lte";
 
 struct Bar {
     std::string ticker;
@@ -31,10 +37,10 @@ struct Client {
     mongocxx::instance instance_ = mongocxx::instance{};
     mongocxx::client client_;
     mongocxx::database database_;
-    Bar get_bar(std::string ticker, unsigned short hour, unsigned short minute);
-    std::vector<Bar> get_bars(std::string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end);
+    Bar* get_bar(std::string ticker, unsigned short hour, unsigned short minute);
+    std::vector<Bar*> get_bars(std::string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end);
     Client();
 
-    private:
-        std::vector<bsoncxx::document::view> query_database(std::string collection_name, std::unordered_map<std::string, std::any>);
+    std::vector<bsoncxx::document::view> query_database(std::string collection_name, std::unordered_map<std::string, std::any> query);
+    std::vector<bsoncxx::document::view> complex_query_database(std::string collection_name, std::unordered_map<std::string, std::any> query, std::unordered_map<std::string, const std::string> operators);
 };
