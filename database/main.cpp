@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
   };
 
   std::unordered_map<unsigned int, const std::string> operators{
-  {2, LESS_THAN}
+    {2, LESS_THAN}
   };
   // std::vector<bsoncxx::document::view> result = client.complex_query_database("AAPL", query, operators);
 
