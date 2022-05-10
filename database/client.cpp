@@ -11,7 +11,7 @@ Client::Client() {
 }
 
 std::vector<bsoncxx::document::view> Client::query_database(std::string collection_name, std::unordered_map<std::string, std::any> query) {
-  std::unordered_map<std::string, const std::string> empty;
+  std::unordered_map<unsigned int, const std::string> empty;
   return complex_query_database(collection_name, query, empty);
 }
 
@@ -22,7 +22,6 @@ std::vector<bsoncxx::document::view> Client::complex_query_database(std::string 
   unsigned int counter = 0;
   for (auto i = query.begin(); i != query.end(); i++) {
     std::any temp = i->second;
-    for (auto i = )
     try {
       unsigned short value = std::any_cast<unsigned short>(temp);
       if (operators.count(counter) != 0) {
@@ -35,7 +34,7 @@ std::vector<bsoncxx::document::view> Client::complex_query_database(std::string 
 
     try {
       int value = std::any_cast<int>(temp);
-      if (operators.count(i->first) != 0) {
+      if (operators.count(counter) != 0) {
         doc.append(kvp(i->first, make_document(kvp(operators.find(counter)->second, value))));
       }
       else doc.append(kvp(i->first, value));
@@ -45,7 +44,7 @@ std::vector<bsoncxx::document::view> Client::complex_query_database(std::string 
 
     try {
       double value = std::any_cast<double>(temp);
-      if (operators.count(i->first) != 0) {
+      if (operators.count(counter) != 0) {
         doc.append(kvp(i->first, make_document(kvp(operators.find(counter)->second, value))));
       }
       else doc.append(kvp(i->first, value));
@@ -55,7 +54,7 @@ std::vector<bsoncxx::document::view> Client::complex_query_database(std::string 
 
     try {
       std::string value = std::any_cast<std::string>(temp);
-      if (operators.count(i->first) != 0) {
+      if (operators.count(counter) != 0) {
         doc.append(kvp(i->first, make_document(kvp(operators.find(counter)->second, value))));
       }
       else doc.append(kvp(i->first, value));
@@ -69,6 +68,7 @@ std::vector<bsoncxx::document::view> Client::complex_query_database(std::string 
       doc.extract()
   );
   for (bsoncxx::document::view doc_ : cursor) {
+    std::cout << bsoncxx::to_json(doc_) << std::endl;
     documents.push_back(doc_);
   }
   return documents;
@@ -107,19 +107,14 @@ std::vector<Bar*> Client::get_bars(std::string ticker, unsigned short hour_start
   if (hour_start == hour_end) {
     std::unordered_map<std::string, std::any> query{
       {"HOUR", hour_start},
-      {"MINUTE", minute}
+      {"MINUTE", minute_start},
+      {"MINUTE", minute_end},
     };
     std::unordered_map<int, const std::string> operators{
-    {"MINUTE", LESS_THAN} //TODO: Allow for range (eg. x <= MINUTE <= y)
+      {1, GREATER_THAN},
+      {2, LESS_THAN},
     };
   }
-  std::unordered_map<std::string, std::any> query{
-    {"HOUR", hour},
-    {"MINUTE", minute}
-  };
-  std::unordered_map<std::string, const std::string> operators{
-  {"HOUR", LESS_THAN}
-  };
   for (unsigned short i = hour_start; i <= hour_end; i++) {
     for (unsigned short j = minute_start; j <= ((hour_end - hour_start) * 60) + minute_end; j++) {
       Bar* bar = get_bar(ticker, i, j % 60);
