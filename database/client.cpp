@@ -10,7 +10,7 @@ Client::Client() {
   database_ = client_[database];
 }
 
-std::vector<bsoncxx::document::view> Client::query_database(std::string collection_name, std::vector<Query> query) {
+std::vector<bsoncxx::document::view> Client::query_database(std::string collection_name, std::vector<QueryBase*> query) {
   std::vector<bsoncxx::document::view> documents;
   mongocxx::collection collection = database_[collection_name];
   auto doc = document{};
@@ -18,7 +18,7 @@ std::vector<bsoncxx::document::view> Client::query_database(std::string collecti
     Query* _query = &(query[i]);
     if (_query->value == 0) {
       doc.append(kvp(_query->key,
-        [](sub_document subdoc) {
+        [](bsoncxx::builder::basic::sub_document subdoc) {
           if (_query->eq) subdoc.append(kvp(GREATER_THAN_EQ, _query->low), kvp(LESS_THAN_EQ, _query->high));
           else subdoc.append(kvp(GREATER_THAN, _query->low), kvp(LESS_THAN, _query->high));
         }
@@ -45,10 +45,11 @@ std::vector<bsoncxx::document::view> Client::query_database(std::string collecti
 }
 
 Bar* Client::get_bar(std::string ticker, unsigned short hour, unsigned short minute) {
-  std::unordered_map<std::string, std::any> query{
-    {"HOUR", hour},
-    {"MINUTE", minute}
-  };
+  std::vector<QueryBase*> query;
+  Query<unsigned short> hour_query("HOUR", hour);
+  Query<unsigned short> minute_query("MINUTE", minute);
+  query.push_back(&hour_query);
+  query.push_back(&minute_query);
   std::vector<bsoncxx::document::view> result = query_database(ticker, query);
 
   double min = std::numeric_limits<double>::max();
@@ -95,23 +96,23 @@ Bar::Bar(std::string ticker_, unsigned short hour_, unsigned short minute_, doub
   high = high_;
 }
 
-template <typename T>
-Query::Query(std::string key_, unsigned short value_) {
-  key = key_;
-  value = value_;
-}
+// template <typename T>
+// Query::Query(std::string key_, T value_) {
+//   key = key_;
+//   value = value_;
+// }
 
-template <typename T>
-Query::Query(std::string key_, unsigned short low_, unsigned short high_, bool eq_) {
-  key = key_;
-  low = low_;
-  high = high_;
-  eq = eq_;
-}
+// template <typename T>
+// Query::Query(std::string key_, const std::string operator_, T value_) {
+//   key = key_;
+//   value = value_;
+//   _operator = operator_;
+// }
 
-template <typename T>
-Query::Query(std::string key_, const std::string _operator, unsigned int value_) {
-  key = key_;
-  _operator = operator_;
-  value = value_;
-}
+// template <typename T>
+// Query::Query(std::string key_, T low_, T high_, bool eq_) {
+//   key = key_;
+//   low = low_;
+//   high = high_;
+//   eq = eq_;
+// }
