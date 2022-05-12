@@ -10,58 +10,28 @@ Client::Client() {
   database_ = client_[database];
 }
 
-std::vector<bsoncxx::document::view> Client::query_database(std::string collection_name, std::unordered_map<std::string, std::any> query) {
-  std::unordered_map<unsigned int, const std::string> empty;
-  return complex_query_database(collection_name, query, empty);
-}
-
-std::vector<bsoncxx::document::view> Client::complex_query_database(std::string collection_name, std::unordered_map<std::string, std::any> query, std::unordered_map<unsigned int, const std::string> operators) {
+std::vector<bsoncxx::document::view> Client::query_database(std::string collection_name, std::vector<Query> query) {
   std::vector<bsoncxx::document::view> documents;
   mongocxx::collection collection = database_[collection_name];
   auto doc = document{};
-  unsigned int counter = 0;
-  for (auto i = query.begin(); i != query.end(); i++) {
-    std::any temp = i->second;
-    try {
-      unsigned short value = std::any_cast<unsigned short>(temp);
-      if (operators.count(counter) != 0) {
-        doc.append(kvp(i->first, make_document(kvp(operators.find(counter)->second, value))));
-      }
-      else doc.append(kvp(i->first, value));
-    } catch (const std::bad_any_cast& e) {
-      // std::cout << "bad_any_cast unsigned short" << std::endl;
+  for (unsigned int i = 0; i < query.size(); i++) {
+    Query* _query = &(query[i]);
+    if (_query->value == 0) {
+      doc.append(kvp(_query->key,
+        [](sub_document subdoc) {
+          if (_query->eq) subdoc.append(kvp(GREATER_THAN_EQ, _query->low), kvp(LESS_THAN_EQ, _query->high));
+          else subdoc.append(kvp(GREATER_THAN, _query->low), kvp(LESS_THAN, _query->high));
+        }
+      ));
     }
-
-    try {
-      int value = std::any_cast<int>(temp);
-      if (operators.count(counter) != 0) {
-        doc.append(kvp(i->first, make_document(kvp(operators.find(counter)->second, value))));
+    else {
+      if (_query->_operator == "") {
+        doc.append(kvp(_query->key, _query->value));
       }
-      else doc.append(kvp(i->first, value));
-    } catch (const std::bad_any_cast& e) {
-      // std::cout << "bad_any_cast int" << std::endl;
-    }
-
-    try {
-      double value = std::any_cast<double>(temp);
-      if (operators.count(counter) != 0) {
-        doc.append(kvp(i->first, make_document(kvp(operators.find(counter)->second, value))));
+      else {
+        doc.append(kvp(_query->key, make_document(kvp(_query->_operator, _query->value))));
       }
-      else doc.append(kvp(i->first, value));
-    } catch (const std::bad_any_cast& e) {
-      // std::cout << "bad_any_cast double" << std::endl;
     }
-
-    try {
-      std::string value = std::any_cast<std::string>(temp);
-      if (operators.count(counter) != 0) {
-        doc.append(kvp(i->first, make_document(kvp(operators.find(counter)->second, value))));
-      }
-      else doc.append(kvp(i->first, value));
-    } catch (const std::bad_any_cast& e) {
-      // std::cout << "bad_any_cast string" << std::endl;
-    }
-    counter++;
   }
 
   mongocxx::cursor cursor = collection.find(
@@ -104,17 +74,8 @@ Bar* Client::get_bar(std::string ticker, unsigned short hour, unsigned short min
 std::vector<Bar*> Client::get_bars(std::string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end) {
   std::vector<Bar*> bars;
   std::vector<bsoncxx::document::view> result;
-  if (hour_start == hour_end) {
-    std::unordered_map<std::string, std::any> query{
-      {"HOUR", hour_start},
-      {"MINUTE", minute_start},
-      {"MINUTE", minute_end},
-    };
-    std::unordered_map<int, const std::string> operators{
-      {1, GREATER_THAN},
-      {2, LESS_THAN},
-    };
-  }
+  // if (hour_start == hour_end) {
+  // }
   for (unsigned short i = hour_start; i <= hour_end; i++) {
     for (unsigned short j = minute_start; j <= ((hour_end - hour_start) * 60) + minute_end; j++) {
       Bar* bar = get_bar(ticker, i, j % 60);
@@ -125,11 +86,32 @@ std::vector<Bar*> Client::get_bars(std::string ticker, unsigned short hour_start
 }
 
 Bar::Bar(std::string ticker_, unsigned short hour_, unsigned short minute_, double open_, double close_, double low_, double high_) {
-    ticker = ticker_;
-    hour = hour_;
-    minute = minute_;
-    open = open_;
-    close = close_;
-    low = low_;
-    high = high_;
+  ticker = ticker_;
+  hour = hour_;
+  minute = minute_;
+  open = open_;
+  close = close_;
+  low = low_;
+  high = high_;
+}
+
+template <typename T>
+Query::Query(std::string key_, unsigned short value_) {
+  key = key_;
+  value = value_;
+}
+
+template <typename T>
+Query::Query(std::string key_, unsigned short low_, unsigned short high_, bool eq_) {
+  key = key_;
+  low = low_;
+  high = high_;
+  eq = eq_;
+}
+
+template <typename T>
+Query::Query(std::string key_, const std::string _operator, unsigned int value_) {
+  key = key_;
+  _operator = operator_;
+  value = value_;
 }

@@ -5,6 +5,7 @@
 #include <any>
 #include <vector>
 #include <limits>
+#include <pair>
 
 #include <mongocxx/client.hpp>
 #include <mongocxx/stdx.hpp>
@@ -25,6 +26,7 @@ const std::string GREATER_THAN = "$gt";
 const std::string LESS_THAN = "$lt";
 const std::string GREATER_THAN_EQ = "$gte";
 const std::string LESS_THAN_EQ = "$lte";
+const std::string EQ = "$eq";
 
 struct Bar {
     std::string ticker;
@@ -32,6 +34,18 @@ struct Bar {
     unsigned short hour, minute;
     Bar(std::string ticker, unsigned short hour, unsigned short minute, double open, double close, double low, double high);
 };
+
+template <typename T>
+struct Query {
+    T value, low, high;
+    bool eq;
+    std::string key;
+    const std::string _operator;
+    std::tuple to_bson();
+    Query(std::string key_, T value_, const std::string operator_);
+    Query(std::string key_, T low_, const std::string operator_, T high_);
+    Query(std::string key_, T low_, T high_, bool eq_) {
+}
 
 struct Client {
     mongocxx::instance instance_ = mongocxx::instance{};
@@ -41,6 +55,5 @@ struct Client {
     std::vector<Bar*> get_bars(std::string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end);
     Client();
 
-    std::vector<bsoncxx::document::view> query_database(std::string collection_name, std::unordered_map<std::string, std::any> query);
-    std::vector<bsoncxx::document::view> complex_query_database(std::string collection_name, std::unordered_map<std::string, std::any> query, std::unordered_map<unsigned int, const std::string> operators);
+    std::vector<bsoncxx::document::view> query_database(std::string collection_name, std::vector<Query> query);
 };
