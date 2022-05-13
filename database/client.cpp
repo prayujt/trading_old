@@ -15,22 +15,64 @@ std::vector<bsoncxx::document::view> Client::query_database(std::string collecti
   mongocxx::collection collection = database_[collection_name];
   auto doc = document{};
   for (unsigned int i = 0; i < query.size(); i++) {
-    Query* _query = &(query[i]);
-    if (_query->value == 0) {
-      doc.append(kvp(_query->key,
-        [](bsoncxx::builder::basic::sub_document subdoc) {
-          if (_query->eq) subdoc.append(kvp(GREATER_THAN_EQ, _query->low), kvp(LESS_THAN_EQ, _query->high));
-          else subdoc.append(kvp(GREATER_THAN, _query->low), kvp(LESS_THAN, _query->high));
+    QueryBase* _query = query[i];
+    unsigned int type = _query->type;
+    switch (type) {
+      case 0:
+        if (static_cast<int>(_query->getValue<int>()) == 0) {
+          doc.append(kvp(_query->key,
+            [_query](bsoncxx::builder::basic::sub_document subdoc) {
+              if (_query->eq) subdoc.append(kvp(GREATER_THAN_EQ, static_cast<int>(_query->getLow<int>())), kvp(LESS_THAN_EQ, static_cast<int>(_query->getHigh<int>())));
+              else subdoc.append(kvp(GREATER_THAN, static_cast<int>(_query->getLow<int>())), kvp(LESS_THAN, static_cast<int>(_query->getHigh<int>())));
+            }
+          ));
         }
-      ));
-    }
-    else {
-      if (_query->_operator == "") {
-        doc.append(kvp(_query->key, _query->value));
-      }
-      else {
-        doc.append(kvp(_query->key, make_document(kvp(_query->_operator, _query->value))));
-      }
+        else {
+          if (_query->_operator == "") {
+            doc.append(kvp(_query->key, static_cast<int>(_query->getValue<int>())));
+          }
+          else {
+            doc.append(kvp(_query->key, make_document(kvp(_query->_operator, static_cast<int>(_query->getValue<int>())))));
+          }
+        }
+        break;
+      case 1:
+        if (static_cast<unsigned short>(_query->getValue<unsigned short>()) == 0) {
+          doc.append(kvp(_query->key,
+            [_query](bsoncxx::builder::basic::sub_document subdoc) {
+              if (_query->eq) subdoc.append(kvp(GREATER_THAN_EQ, static_cast<unsigned short>(_query->getLow<unsigned short>())), kvp(LESS_THAN_EQ, static_cast<unsigned short>(_query->getHigh<unsigned short>())));
+              else subdoc.append(kvp(GREATER_THAN, static_cast<unsigned short>(_query->getLow<unsigned short>())), kvp(LESS_THAN, static_cast<unsigned short>(_query->getHigh<unsigned short>())));
+            }
+          ));
+        }
+        else {
+          if (_query->_operator == "") {
+            doc.append(kvp(_query->key, static_cast<unsigned short>(_query->getValue<unsigned short>())));
+          }
+          else {
+            doc.append(kvp(_query->key, make_document(kvp(_query->_operator, static_cast<unsigned short>(_query->getValue<unsigned short>())))));
+          }
+        }
+
+        break;
+      case 2:
+        if (static_cast<double>(_query->getValue<double>()) == 0) {
+          doc.append(kvp(_query->key,
+            [_query](bsoncxx::builder::basic::sub_document subdoc) {
+              if (_query->eq) subdoc.append(kvp(GREATER_THAN_EQ, static_cast<double>(_query->getLow<double>())), kvp(LESS_THAN_EQ, static_cast<double>(_query->getHigh<double>())));
+              else subdoc.append(kvp(GREATER_THAN, static_cast<double>(_query->getLow<double>())), kvp(LESS_THAN, static_cast<double>(_query->getHigh<double>())));
+            }
+          ));
+        }
+        else {
+          if (_query->_operator == "") {
+            doc.append(kvp(_query->key, static_cast<double>(_query->getValue<double>())));
+          }
+          else {
+            doc.append(kvp(_query->key, make_document(kvp(_query->_operator, static_cast<double>(_query->getValue<double>())))));
+          }
+        }
+        break;
     }
   }
 

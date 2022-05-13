@@ -27,18 +27,36 @@ const std::string GREATER_THAN_EQ = "$gte";
 const std::string LESS_THAN_EQ = "$lte";
 const std::string EQ = "$eq";
 
+template <typename T>
+unsigned int checkType(T check) {
+  if (typeid(check) == typeid(int)) return 0;
+  else if (typeid(check) == typeid(unsigned short)) return 1;
+  else if (typeid(check) == typeid(double)) return 2;
+}
+
 struct QueryBase {
+  bool eq;
+  std::string key;
+  unsigned int type;
+  const std::string _operator;
+  template <typename T> T getValue();
+  template <typename T> T getLow();
+  template <typename T> T getHigh();
+  QueryBase(std::string key_) : key(key_) {}
+  QueryBase(std::string key_, const std::string operator_) : key(key_), _operator(operator_) {}
+  QueryBase(std::string key_, bool eq_) : key(key_), eq(eq_) {}
+  virtual ~QueryBase() = default;
 };
 
 template <typename T>
-struct Query : QueryBase {
-  bool eq;
-  std::string key;
-  const std::string _operator;
+struct Query : public QueryBase {
   T value, low, high;
-  Query(std::string key_, T value_) : key(key_), value(value_) {}
-  Query(std::string key_, const std::string operator_, T value_) : key(key_), _operator(operator_), value(value_) {}
-  Query(std::string key_, T low_, T high_, bool eq_) : key(key_), low(low_), high(high_), eq(eq_) {}
+  T getValue() { return value; }
+  T getLow() { return low; }
+  T getHigh() { return high; }
+  Query(std::string key_, T value_) : QueryBase(key_), value(value_) { type = checkType<T>(value_); }
+  Query(std::string key_, const std::string operator_, T value_) : QueryBase(key_, operator_), value(value_) { type = checkType<T>(value_); }
+  Query(std::string key_, T low_, T high_, bool eq_) : QueryBase(key_, eq_), low(low_), high(high_) { type = checkType<T>(low_); }
 };
 
 struct Bar {
@@ -58,3 +76,18 @@ struct Client {
 
   std::vector<bsoncxx::document::view> query_database(std::string collection_name, std::vector<QueryBase*> query);
 };
+
+template <typename T>
+T QueryBase::getValue() {
+    return (dynamic_cast<Query<T>&>(*this)).getValue();
+  }
+
+template <typename T>
+T QueryBase::getLow() {
+  return (dynamic_cast<Query<T>&>(*this)).getLow();
+}
+
+template <typename T>
+T QueryBase::getHigh() {
+  return (dynamic_cast<Query<T>&>(*this)).getHigh();
+}
