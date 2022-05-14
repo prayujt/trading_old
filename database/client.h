@@ -29,15 +29,15 @@ const std::string EQ = "$eq";
 
 template <typename T>
 unsigned int checkType(T check) {
-  if (typeid(check) == typeid(int)) return 0;
-  else if (typeid(check) == typeid(unsigned short)) return 1;
+  if (typeid(check) == typeid(unsigned short)) return 0;
+  else if (typeid(check) == typeid(int)) return 1;
   else if (typeid(check) == typeid(double)) return 2;
 }
 
 struct QueryBase {
   bool eq;
   std::string key;
-  unsigned int type;
+  unsigned int query_type, constructor_type;
   const std::string _operator;
   template <typename T> T getValue();
   template <typename T> T getLow();
@@ -54,9 +54,20 @@ struct Query : public QueryBase {
   T getValue() { return value; }
   T getLow() { return low; }
   T getHigh() { return high; }
-  Query(std::string key_, T value_) : QueryBase(key_), value(value_) { type = checkType<T>(value_); }
-  Query(std::string key_, const std::string operator_, T value_) : QueryBase(key_, operator_), value(value_) { type = checkType<T>(value_); }
-  Query(std::string key_, T low_, T high_, bool eq_) : QueryBase(key_, eq_), low(low_), high(high_) { type = checkType<T>(low_); }
+  Query(std::string key_, T value_) : QueryBase(key_), value(value_) {
+    query_type = checkType<T>(value_);
+    constructor_type = 0;
+  }
+  Query(std::string key_, const std::string operator_, T value_) : QueryBase(key_, operator_), value(value_) {
+    query_type = checkType<T>(value_);
+    constructor_type = 1;
+  }
+  Query(std::string key_, T low_, T high_, bool eq_) : QueryBase(key_, eq_), low(low_), high(high_) {
+    query_type = checkType<T>(low_);
+    unsigned int temp = checkType<T>(high_);
+    if (temp > query_type) query_type = temp;
+    constructor_type = 2;
+  }
 };
 
 struct Bar {
@@ -90,4 +101,24 @@ T QueryBase::getLow() {
 template <typename T>
 T QueryBase::getHigh() {
   return (dynamic_cast<Query<T>&>(*this)).getHigh();
+}
+
+template <typename T>
+void parse_query(QueryBase* query, bsoncxx::builder::basic::document* doc) {
+  switch (query->constructor_type) {
+    case 0:
+        doc->append(kvp(query->key, static_cast<T>(query->getValue<T>())));
+        break;
+    case 1:
+      doc->append(kvp(query->key, make_document(kvp(query->_operator, static_cast<T>(query->getValue<T>())))));
+      break;
+    case 2:
+      doc->append(kvp(query->key,
+        [query](bsoncxx::builder::basic::sub_document subdoc) {
+          if (query->eq) subdoc.append(kvp(GREATER_THAN_EQ, static_cast<T>(query->getLow<T>())), kvp(LESS_THAN_EQ, static_cast<T>(query->getHigh<T>())));
+          else subdoc.append(kvp(GREATER_THAN, static_cast<T>(query->getLow<T>())), kvp(LESS_THAN, static_cast<T>(query->getHigh<T>())));
+        }
+      ));
+      break;
+  }
 }

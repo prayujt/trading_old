@@ -13,69 +13,24 @@ Client::Client() {
 std::vector<bsoncxx::document::view> Client::query_database(std::string collection_name, std::vector<QueryBase*> query) {
   std::vector<bsoncxx::document::view> documents;
   mongocxx::collection collection = database_[collection_name];
-  auto doc = document{};
+  bsoncxx::builder::basic::document doc = document{};
   for (unsigned int i = 0; i < query.size(); i++) {
     QueryBase* _query = query[i];
-    unsigned int type = _query->type;
+    unsigned int type = _query->query_type;
     switch (type) {
       case 0:
-        if (static_cast<int>(_query->getValue<int>()) == 0) {
-          doc.append(kvp(_query->key,
-            [_query](bsoncxx::builder::basic::sub_document subdoc) {
-              if (_query->eq) subdoc.append(kvp(GREATER_THAN_EQ, static_cast<int>(_query->getLow<int>())), kvp(LESS_THAN_EQ, static_cast<int>(_query->getHigh<int>())));
-              else subdoc.append(kvp(GREATER_THAN, static_cast<int>(_query->getLow<int>())), kvp(LESS_THAN, static_cast<int>(_query->getHigh<int>())));
-            }
-          ));
-        }
-        else {
-          if (_query->_operator == "") {
-            doc.append(kvp(_query->key, static_cast<int>(_query->getValue<int>())));
-          }
-          else {
-            doc.append(kvp(_query->key, make_document(kvp(_query->_operator, static_cast<int>(_query->getValue<int>())))));
-          }
-        }
+        parse_query<unsigned short>(_query, &doc);
         break;
       case 1:
-        if (static_cast<unsigned short>(_query->getValue<unsigned short>()) == 0) {
-          doc.append(kvp(_query->key,
-            [_query](bsoncxx::builder::basic::sub_document subdoc) {
-              if (_query->eq) subdoc.append(kvp(GREATER_THAN_EQ, static_cast<unsigned short>(_query->getLow<unsigned short>())), kvp(LESS_THAN_EQ, static_cast<unsigned short>(_query->getHigh<unsigned short>())));
-              else subdoc.append(kvp(GREATER_THAN, static_cast<unsigned short>(_query->getLow<unsigned short>())), kvp(LESS_THAN, static_cast<unsigned short>(_query->getHigh<unsigned short>())));
-            }
-          ));
-        }
-        else {
-          if (_query->_operator == "") {
-            doc.append(kvp(_query->key, static_cast<unsigned short>(_query->getValue<unsigned short>())));
-          }
-          else {
-            doc.append(kvp(_query->key, make_document(kvp(_query->_operator, static_cast<unsigned short>(_query->getValue<unsigned short>())))));
-          }
-        }
-
+        parse_query<int>(_query, &doc);
         break;
       case 2:
-        if (static_cast<double>(_query->getValue<double>()) == 0) {
-          doc.append(kvp(_query->key,
-            [_query](bsoncxx::builder::basic::sub_document subdoc) {
-              if (_query->eq) subdoc.append(kvp(GREATER_THAN_EQ, static_cast<double>(_query->getLow<double>())), kvp(LESS_THAN_EQ, static_cast<double>(_query->getHigh<double>())));
-              else subdoc.append(kvp(GREATER_THAN, static_cast<double>(_query->getLow<double>())), kvp(LESS_THAN, static_cast<double>(_query->getHigh<double>())));
-            }
-          ));
-        }
-        else {
-          if (_query->_operator == "") {
-            doc.append(kvp(_query->key, static_cast<double>(_query->getValue<double>())));
-          }
-          else {
-            doc.append(kvp(_query->key, make_document(kvp(_query->_operator, static_cast<double>(_query->getValue<double>())))));
-          }
-        }
+        parse_query<double>(_query, &doc);
         break;
     }
   }
 
+  // std::cout << bsoncxx::to_json(doc) << std::endl;
   mongocxx::cursor cursor = collection.find(
       doc.extract()
   );
@@ -88,10 +43,10 @@ std::vector<bsoncxx::document::view> Client::query_database(std::string collecti
 
 Bar* Client::get_bar(std::string ticker, unsigned short hour, unsigned short minute) {
   std::vector<QueryBase*> query;
-  Query<unsigned short> hour_query("HOUR", hour);
-  Query<unsigned short> minute_query("MINUTE", minute);
-  query.push_back(&hour_query);
-  query.push_back(&minute_query);
+  Query<unsigned short>* hour_query = new Query<unsigned short>("HOUR", hour);
+  Query<unsigned short>* minute_query = new Query<unsigned short>("MINUTE", minute);
+  query.push_back(hour_query);
+  query.push_back(minute_query);
   std::vector<bsoncxx::document::view> result = query_database(ticker, query);
 
   double min = std::numeric_limits<double>::max();
@@ -137,24 +92,3 @@ Bar::Bar(std::string ticker_, unsigned short hour_, unsigned short minute_, doub
   low = low_;
   high = high_;
 }
-
-// template <typename T>
-// Query::Query(std::string key_, T value_) {
-//   key = key_;
-//   value = value_;
-// }
-
-// template <typename T>
-// Query::Query(std::string key_, const std::string operator_, T value_) {
-//   key = key_;
-//   value = value_;
-//   _operator = operator_;
-// }
-
-// template <typename T>
-// Query::Query(std::string key_, T low_, T high_, bool eq_) {
-//   key = key_;
-//   low = low_;
-//   high = high_;
-//   eq = eq_;
-// }
