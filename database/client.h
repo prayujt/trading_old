@@ -79,9 +79,21 @@ struct Bar {
 };
 
 struct Client {
+  struct Queue {
+    Bar* dequeue();
+    void enqueue(Bar* _bar);
+    Bar* peek();
+    unsigned short size();
+    bool isEmpty();
+    bool isFull();
+    Queue();
+  };
+
   mongocxx::instance instance_ = mongocxx::instance{};
   mongocxx::client client_;
   mongocxx::database database_;
+
+  Queue sma_bars;
 
   Bar* get_bar(std::string ticker, unsigned short hour, unsigned short minute);
   std::vector<Bar*> get_bars(std::string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end);

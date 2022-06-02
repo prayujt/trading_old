@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
   // for (Bar* bar : bars) {
   //   std::cout << *bar << std::endl;
   // }
-  double test = client.get_sma("AAPL", 2, 9, 32);
+  double test = client.get_sma("AAPL", 2);
   std::cout << test << std::endl;
   // Bar* bar = client.get_bar("AAPL", 9, 32);
   // std::cout << *bar << std::endl;

@@ -154,3 +154,30 @@ Bar::Bar(std::string ticker_, unsigned short hour_, unsigned short minute_, doub
   low = low_;
   high = high_;
 }
+
+Client::Queue::Queue() {
+
+}
+
+Bar* Client::Queue::dequeue() {
+  return NULL;
+}
+void Client::Queue::enqueue(Bar* _bar) {
+
+}
+
+Bar* Client::Queue::peek() {
+  return NULL;
+}
+
+unsigned short Client::Queue::size() {
+  return 0;
+}
+
+bool Client::Queue::isEmpty() {
+  return 0;
+}
+
+bool Client::Queue::isFull() {
+  return 0;
+}
