@@ -21,6 +21,7 @@ using bsoncxx::builder::basic::document;
 using bsoncxx::builder::basic::kvp;
 using bsoncxx::builder::basic::make_document;
 
+// constants for database queries
 const std::string GREATER_THAN = "$gt";
 const std::string LESS_THAN = "$lt";
 const std::string GREATER_THAN_EQ = "$gte";
@@ -81,11 +82,25 @@ struct Client {
   mongocxx::instance instance_ = mongocxx::instance{};
   mongocxx::client client_;
   mongocxx::database database_;
+
   Bar* get_bar(std::string ticker, unsigned short hour, unsigned short minute);
   std::vector<Bar*> get_bars(std::string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end);
-  Client();
 
-  std::vector<bsoncxx::document::view> query_database(std::string collection_name, std::vector<QueryBase*> query);
+  double get_sma(std::string ticker, unsigned short offset, unsigned short hour, unsigned short minute);
+  double get_sma(std::string ticker, unsigned short offset);
+
+  mongocxx::cursor query_database(std::string collection_name, std::vector<QueryBase*> query);
+
+  Client();
+};
+
+struct Time {
+  unsigned short _time[3];
+  void operator++(int);
+  void operator--(int);
+  Time();
+  Time(unsigned short hour, unsigned short minute);
+  Time(unsigned short hour, unsigned short minute, unsigned short second);
 };
 
 template <typename T>
