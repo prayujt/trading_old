@@ -3,7 +3,7 @@ CFLAGS = -std=c++17 -w -g -I/usr/local/include/mongocxx/v_noabi -I/usr/local/inc
 UNAME_S := $(shell uname -s)
 
 TARGET = main
-SOURCES := *.cpp
+SOURCES := database/*.cpp algo/*.cpp
 
 ifeq ($(UNAME_S),Darwin)
 	CFLAGS += -lmongocxx -lbsoncxx

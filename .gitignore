@@ -1,6 +1,6 @@
 .token
-database/main
-database/main.dSYM
+main
+main.dSYM
 alpaca/bazel-out
 alpaca/bazel-bin
 alpaca/bazel-alpaca

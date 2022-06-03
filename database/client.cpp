@@ -1,18 +1,27 @@
 #include "client.h"
 #include <ctime>
+#include <fstream>
 
 Client::Client() {
-  std::string uri = getenv("MONGO_DB_URI");
-  std::string database = getenv("MONGO_DB_DATABASE");
+  string uri = getenv("MONGO_DB_URI");
+  string database = getenv("MONGO_DB_DATABASE");
 
   client_ = mongocxx::client{
     mongocxx::uri{uri}
   };
   database_ = client_[database];
+  ifstream tickerFile("../tickers");
+  string temp;
+  while (getline(tickerFile, temp)) {
+    if (temp != "") {
+      sma_bars[temp] = Client::Queue{128};
+      update_bars(temp);
+    }
+  }
 }
 
-mongocxx::cursor Client::query_database(std::string collection_name, std::vector<QueryBase*> query) {
-  std::vector<bsoncxx::document::view> documents;
+mongocxx::cursor Client::query_database(string collection_name, vector<QueryBase*> query) {
+  vector<bsoncxx::document::view> documents;
   mongocxx::collection collection = database_[collection_name];
   bsoncxx::builder::basic::document doc = document{};
   for (unsigned int i = 0; i < query.size(); i++) {
@@ -38,16 +47,16 @@ mongocxx::cursor Client::query_database(std::string collection_name, std::vector
   return cursor;
 }
 
-Bar* Client::get_bar(std::string ticker, unsigned short hour, unsigned short minute) {
-  std::vector<QueryBase*> query;
+Bar* Client::get_bar(string ticker, unsigned short hour, unsigned short minute) {
+  vector<QueryBase*> query;
   Query<unsigned short>* hour_query = new Query<unsigned short>("HOUR", hour);
   Query<unsigned short>* minute_query = new Query<unsigned short>("MINUTE", minute);
   query.push_back(hour_query);
   query.push_back(minute_query);
   mongocxx::cursor result = query_database(ticker, query);
 
-  double min = std::numeric_limits<double>::max();
-  double max = std::numeric_limits<double>::min();
+  double min = numeric_limits<double>::max();
+  double max = numeric_limits<double>::min();
   double open, close;
   double temp = 0;
   bool first = 1;
@@ -68,15 +77,15 @@ Bar* Client::get_bar(std::string ticker, unsigned short hour, unsigned short min
     temp = last_price;
   }
   close = temp;
-  if (!(min == std::numeric_limits<double>::max() || max == std::numeric_limits<double>::min()))
+  if (!(min == numeric_limits<double>::max() || max == numeric_limits<double>::min()))
     return new Bar(ticker, hour, minute, open, close, min, max);
   else return NULL;
 }
 
-std::vector<Bar*> Client::get_bars(std::string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end) {
-  std::vector<Bar*> bars;
+vector<Bar*> Client::get_bars(string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end) {
+  vector<Bar*> bars;
   // if (hour_start == hour_end) {
-  //   std::vector<QueryBase*> query;
+  //   vector<QueryBase*> query;
   //   Query<unsigned short>* query1 = new Query<unsigned short>("MINUTE", minute_start, minute_end, 1);
   //   Query<unsigned short>* query2 = new Query<unsigned short>("HOUR", hour_start);
   //   query.push_back(query1);
@@ -92,30 +101,45 @@ std::vector<Bar*> Client::get_bars(std::string ticker, unsigned short hour_start
   return bars;
 }
 
-double Client::get_sma(std::string ticker, unsigned short offset, unsigned short hour, unsigned short minute) {
+double Client::get_sma(string ticker, unsigned short offset, unsigned short hour, unsigned short minute) {
   Time timeObj(hour, minute);
   unsigned short* time = timeObj._time;
   double sum = 0;
+  unsigned short adjOffset = offset;
   for (unsigned short i = 0; i < offset; i++) {
     Bar* bar = get_bar(ticker, time[0], time[1]);
-    sum += bar->close;
     timeObj--;
+    if (bar == NULL) {
+      cout << time[0] << ":" << time[1] << endl;
+      adjOffset--;
+      continue;
+    }
+    sum += bar->close;
   }
-  return sum / offset;
+  return sum / adjOffset;
 }
 
-double Client::get_sma(std::string ticker, unsigned short offset) {
+double Client::get_sma(string ticker, unsigned short offset) {
   Time timeObj;
   return get_sma(ticker, offset, timeObj._time[0], timeObj._time[1]);
 }
 
 Time::Time() {
-  std::time_t now = std::time(0);
-  std::tm* ltm = std::localtime(&now);
+  time_t now = time(0);
+  tm* ltm = localtime(&now);
   _time[0] = ltm->tm_hour;
   _time[1] = ltm->tm_min;
   _time[2] = ltm->tm_sec;
 }
+
+void Client::update_bars(string ticker) {
+  if (sma_bars[ticker].size == 0) {
+
+  }
+  Time timeObj;
+  // Bar* check = get_bar()
+}
+
 
 Time::Time(unsigned short hour, unsigned short minute) {
   _time[0] = hour;
@@ -145,7 +169,7 @@ void Time::operator--(int value) {
   else _time[1] = _time[1] - 1;
 }
 
-Bar::Bar(std::string ticker_, unsigned short hour_, unsigned short minute_, double open_, double close_, double low_, double high_) {
+Bar::Bar(string ticker_, unsigned short hour_, unsigned short minute_, double open_, double close_, double low_, double high_) {
   ticker = ticker_;
   hour = hour_;
   minute = minute_;
@@ -155,29 +179,83 @@ Bar::Bar(std::string ticker_, unsigned short hour_, unsigned short minute_, doub
   high = high_;
 }
 
-Client::Queue::Queue() {
-
+Client::Queue::Queue(unsigned short _max_size) {
+  max_size = _max_size;
 }
 
 Bar* Client::Queue::dequeue() {
-  return NULL;
+  Node* temp = head;
+  if (head->next == NULL) {
+    head = NULL;
+    return temp->value;
+  }
+  head->next->prev = NULL;
+  head = head->next;
+  size--;
+  return temp->value;
 }
-void Client::Queue::enqueue(Bar* _bar) {
 
+void Client::Queue::enqueueHead(Bar* _bar) {
+  size++;
+  if (head == NULL && tail == NULL) {
+    head = new Node(_bar);
+    tail = head;
+    return;
+  }
+  Node* temp = new Node(_bar, head);
+  head->prev = temp;
+  head = temp;
+}
+
+void Client::Queue::enqueue(Bar* _bar) {
+  size++;
+  if (head == NULL && tail == NULL) {
+    head = new Node(_bar);
+    tail = head;
+    return;
+  }
+  Node* temp = new Node(tail, _bar);
+  tail->next = temp;
+  tail = temp;
 }
 
 Bar* Client::Queue::peek() {
-  return NULL;
-}
-
-unsigned short Client::Queue::size() {
-  return 0;
+  return head->value;
 }
 
 bool Client::Queue::isEmpty() {
-  return 0;
+  return size == 0;
 }
 
 bool Client::Queue::isFull() {
-  return 0;
+  return size == max_size;
+}
+
+Client::Queue::iterator Client::Queue::begin() {
+  return Client::Queue::iterator(head);
+}
+
+Client::Queue::iterator Client::Queue::end() {
+  return Client::Queue::iterator(NULL);
+}
+
+Bar* Client::Queue::iterator::value() {
+  if (node == NULL) return NULL;
+  return node->value;
+}
+
+void Client::Queue::iterator::operator++(int value) {
+  node = node->next;
+}
+
+void Client::Queue::iterator::operator--(int value) {
+  node = node->prev;
+}
+
+bool Client::Queue::iterator::operator==(iterator second) {
+  return value() == second.value();
+}
+
+bool Client::Queue::iterator::operator!=(iterator second) {
+  return value() != second.value();
 }
