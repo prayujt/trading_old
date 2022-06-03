@@ -119,6 +119,7 @@ struct Client {
     bool isFull();
 
     iterator begin();
+    iterator beginFromEnd();
     iterator end();
 
     Queue(unsigned short max_size);

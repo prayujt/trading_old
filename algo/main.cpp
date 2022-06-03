@@ -13,7 +13,6 @@ ostream &operator<<(ostream &os, Time* const &time) {
 int main(int argc, char* argv[]) {
   Client client;
 
-  Client::Queue queue = client.sma_bars["AAPL"];
   // Bar* bar = client.get_bar("AAPL", 9, 32);
   // queue.enqueue(bar);
   // bar = client.get_bar("AAPL", 9, 33);
@@ -22,8 +21,15 @@ int main(int argc, char* argv[]) {
   // queue.enqueue(bar);
 
   // cout << *(queue.dequeue()) << endl;
-  for (auto i = queue.begin(); i != queue.end(); i++) {
-    cout << *(i.value()) << endl;
+  while (1) {
+    // client.update_bars("AAPL");
+    // Client::Queue queue = client.sma_bars["AAPL"];
+    // for (auto i = queue.begin(); i != queue.end(); i++) {
+    //   cout << *(i.value()) << endl;
+    // }
+    cout << client.get_sma("AAPL", 32) << endl;
+    cout << client.get_sma("AAPL", 50) << endl;
+    // cout << "----------------" << endl;
   }
 
   return 0;

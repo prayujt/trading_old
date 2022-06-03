@@ -14,7 +14,7 @@ Client::Client() {
   string temp;
   while (getline(tickerFile, temp)) {
     if (temp != "") {
-      sma_bars[temp] = Client::Queue{128};
+      sma_bars[temp] = Client::Queue{50};
       update_bars(temp);
     }
   }
@@ -45,6 +45,40 @@ mongocxx::cursor Client::query_database(string collection_name, vector<QueryBase
   );
 
   return cursor;
+}
+
+void Client::update_bars(string ticker) {
+  Queue& _queue = sma_bars[ticker];
+  if (_queue.size == 0) {
+    Time timeObj;
+    timeObj--;
+    Bar* temp = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
+    unsigned short counter = 0;
+    while (temp != NULL && counter < _queue.max_size) {
+      _queue.enqueueHead(temp);
+      timeObj--;
+      temp = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
+      counter++;
+    }
+  }
+  else {
+    Time timeObj;
+    if (timeObj._time[0] == _queue.last_hour && timeObj._time[1] == _queue.last_min) {
+      Queue::Node* temp = (_queue.tail)->prev;
+      Queue::Node* newTail = new Queue::Node(temp, get_bar(ticker, _queue.last_hour, _queue.last_min));
+      delete _queue.tail;
+      temp->next = newTail;
+      _queue.tail = newTail;
+    }
+    else {
+      Bar* remove = _queue.dequeue();
+      delete remove;
+      Bar* _new = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
+      _queue.enqueue(_new);
+      _queue.last_hour = timeObj._time[0];
+      _queue.last_min = timeObj._time[1];
+    }
+  }
 }
 
 Bar* Client::get_bar(string ticker, unsigned short hour, unsigned short minute) {
@@ -98,15 +132,21 @@ double Client::get_sma(string ticker, unsigned short offset, unsigned short hour
   unsigned short* time = timeObj._time;
   double sum = 0;
   unsigned short adjOffset = offset;
+  update_bars(ticker);
+  Client::Queue _queue = sma_bars[ticker];
+  if (offset > _queue.max_size || offset > _queue.size) return 0;
+  Client::Queue::iterator iter = _queue.beginFromEnd();
   for (unsigned short i = 0; i < offset; i++) {
-    Bar* bar = get_bar(ticker, time[0], time[1]);
+    Bar* bar = iter.value();
     timeObj--;
     if (bar == NULL) {
       cout << time[0] << ":" << time[1] << endl;
-      adjOffset--;
-      continue;
+      return 0;
+      // adjOffset--;
+      // continue;
     }
     sum += bar->close;
+    iter--;
   }
   return sum / adjOffset;
 }
@@ -122,40 +162,6 @@ Time::Time() {
   _time[0] = ltm->tm_hour;
   _time[1] = ltm->tm_min;
   _time[2] = ltm->tm_sec;
-}
-
-void Client::update_bars(string ticker) {
-  Queue _queue = sma_bars[ticker];
-  if (_queue.size == 0) {
-    Time timeObj;
-    timeObj--;
-    Bar* temp = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
-    unsigned short counter = 0;
-    while (temp != NULL && counter < _queue.max_size) {
-      _queue.enqueueHead(temp);
-      timeObj--;
-      temp = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
-      counter++;
-    }
-  }
-  else {
-    Time timeObj;
-    if (timeObj._time[0] == _queue.last_hour && timeObj._time[1] == _queue.last_min) {
-      Queue::Node* temp = (_queue.tail)->prev;
-      Queue::Node* newTail = new Queue::Node(temp, get_bar(ticker, _queue.last_hour, _queue.last_min));
-      delete _queue.tail;
-      temp->next = newTail;
-      _queue.tail = newTail;
-    }
-    else {
-      Bar* remove = _queue.dequeue();
-      delete remove;
-      Bar* _new = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
-      _queue.enqueue(_new);
-      _queue.last_hour = timeObj._time[0];
-      _queue.last_min = timeObj._time[1];
-    }
-  }
 }
 
 Time::Time(unsigned short hour, unsigned short minute) {
@@ -252,6 +258,10 @@ bool Client::Queue::isFull() {
 
 Client::Queue::iterator Client::Queue::begin() {
   return Client::Queue::iterator(head);
+}
+
+Client::Queue::iterator Client::Queue::beginFromEnd() {
+  return Client::Queue::iterator(tail);
 }
 
 Client::Queue::iterator Client::Queue::end() {
