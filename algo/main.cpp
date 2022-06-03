@@ -14,14 +14,17 @@ int main(int argc, char* argv[]) {
   Client client;
 
   Client::Queue queue = client.sma_bars["AAPL"];
-  Bar* bar = client.get_bar("AAPL", 9, 32);
-  queue.enqueue(bar);
-  bar = client.get_bar("AAPL", 9, 33);
-  queue.enqueue(bar);
-  bar = client.get_bar("AAPL", 9, 34);
-  queue.enqueue(bar);
+  // Bar* bar = client.get_bar("AAPL", 9, 32);
+  // queue.enqueue(bar);
+  // bar = client.get_bar("AAPL", 9, 33);
+  // queue.enqueue(bar);
+  // bar = client.get_bar("AAPL", 9, 34);
+  // queue.enqueue(bar);
 
-  std::cout << *(queue.dequeue()) << std::endl;
+  // cout << *(queue.dequeue()) << endl;
+  for (auto i = queue.begin(); i != queue.end(); i++) {
+    cout << *(i.value()) << endl;
+  }
 
   return 0;
 }

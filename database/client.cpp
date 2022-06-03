@@ -10,7 +10,7 @@ Client::Client() {
     mongocxx::uri{uri}
   };
   database_ = client_[database];
-  ifstream tickerFile("../tickers");
+  ifstream tickerFile("tickers");
   string temp;
   while (getline(tickerFile, temp)) {
     if (temp != "") {
@@ -84,14 +84,6 @@ Bar* Client::get_bar(string ticker, unsigned short hour, unsigned short minute) 
 
 vector<Bar*> Client::get_bars(string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end) {
   vector<Bar*> bars;
-  // if (hour_start == hour_end) {
-  //   vector<QueryBase*> query;
-  //   Query<unsigned short>* query1 = new Query<unsigned short>("MINUTE", minute_start, minute_end, 1);
-  //   Query<unsigned short>* query2 = new Query<unsigned short>("HOUR", hour_start);
-  //   query.push_back(query1);
-  //   query.push_back(query2);
-  //   mongocxx::cursor result = query_database(ticker, query);
-  // }
   unsigned short hour = hour_start;
   for (unsigned short i = minute_start; i <= ((hour_end - hour_start) * 60) + minute_end; i++) {
     if (i != minute_start && i % 60 == 0) hour++;
@@ -133,13 +125,38 @@ Time::Time() {
 }
 
 void Client::update_bars(string ticker) {
-  if (sma_bars[ticker].size == 0) {
-
+  Queue _queue = sma_bars[ticker];
+  if (_queue.size == 0) {
+    Time timeObj;
+    timeObj--;
+    Bar* temp = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
+    unsigned short counter = 0;
+    while (temp != NULL && counter < _queue.max_size) {
+      _queue.enqueueHead(temp);
+      timeObj--;
+      temp = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
+      counter++;
+    }
   }
-  Time timeObj;
-  // Bar* check = get_bar()
+  else {
+    Time timeObj;
+    if (timeObj._time[0] == _queue.last_hour && timeObj._time[1] == _queue.last_min) {
+      Queue::Node* temp = (_queue.tail)->prev;
+      Queue::Node* newTail = new Queue::Node(temp, get_bar(ticker, _queue.last_hour, _queue.last_min));
+      delete _queue.tail;
+      temp->next = newTail;
+      _queue.tail = newTail;
+    }
+    else {
+      Bar* remove = _queue.dequeue();
+      delete remove;
+      Bar* _new = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
+      _queue.enqueue(_new);
+      _queue.last_hour = timeObj._time[0];
+      _queue.last_min = timeObj._time[1];
+    }
+  }
 }
-
 
 Time::Time(unsigned short hour, unsigned short minute) {
   _time[0] = hour;
@@ -204,6 +221,7 @@ void Client::Queue::enqueueHead(Bar* _bar) {
   }
   Node* temp = new Node(_bar, head);
   head->prev = temp;
+  temp->next = head;
   head = temp;
 }
 
@@ -216,6 +234,7 @@ void Client::Queue::enqueue(Bar* _bar) {
   }
   Node* temp = new Node(tail, _bar);
   tail->next = temp;
+  temp->prev = tail;
   tail = temp;
 }
 

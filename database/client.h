@@ -108,6 +108,8 @@ struct Client {
     Node* tail = nullptr;
     unsigned short max_size;
     unsigned short size = 0;
+    unsigned short last_min = 0;
+    unsigned short last_hour = 0;
 
     Bar* dequeue();
     void enqueueHead(Bar* _bar);
