@@ -1,3 +1,0 @@
-build --cxxopt='-std=c++17'
-build --action_env=APCA_API_KEY_ID
-build --action_env=APCA_API_SECRET_KEY

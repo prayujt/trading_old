@@ -1,19 +1,19 @@
 CC = g++
-CFLAGS = -std=c++17 -w -g -I/usr/local/include/mongocxx/v_noabi -I/usr/local/include/bsoncxx/v_noabi -lssl -lcrypto -lglog
-UNAME_S := $(shell uname -s)
+CFLAGS = -std=c++17 -w -g -I/usr/local/include/mongocxx/v_noabi -I/usr/local/include/bsoncxx/v_noabi -lmongocxx -lbsoncxx -lssl -lcrypto -lglog
+# UNAME_S := $(shell uname -s)
 
 TARGET = main
 SOURCES := exec/*.cpp database/*.cpp algo/*.cpp
 
-ifeq ($(UNAME_S),Darwin)
-	CFLAGS += -lmongocxx -lbsoncxx
-endif
+# ifeq ($(UNAME_S),Darwin)
+	# CFLAGS += -lmongocxx -lbsoncxx -lssl -lcrypto -lglog
+# endif
 
 MAKE_CMD = $(CC) $(CFLAGS) -o $(TARGET) $(SOURCES)
 
-ifeq ($(UNAME_S),Linux)
-	MAKE_CMD += /usr/local/lib/libmongocxx.so /usr/local/lib/libbsoncxx.so
-endif
+# ifeq ($(UNAME_S),Linux)
+	# MAKE_CMD += /usr/local/lib/libmongocxx.so /usr/local/lib/libbsoncxx.so
+# endif
 
 all:
 	$(MAKE_CMD)
