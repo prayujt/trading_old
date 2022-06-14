@@ -29,7 +29,7 @@ Client::Client(Environment& environment) {
   environment_ = environment;
 }
 
-std::pair<Status, Order> Client::getOrder(const std::string& id, const bool nested) const {
+std::pair<Status, Order> Client::get_order(const std::string& id, const bool nested) const {
   Order order;
 
   auto url = "/v2/orders/" + id;
@@ -56,7 +56,7 @@ std::pair<Status, Order> Client::getOrder(const std::string& id, const bool nest
   return std::make_pair(order.fromJSON(resp->body), order);
 }
 
-std::pair<Status, Order> Client::getOrderByClientOrderID(const std::string& client_order_id) const {
+std::pair<Status, Order> Client::get_order_by_client_id(const std::string& client_order_id) const {
   Order order;
 
   auto url = "/v2/orders:by_client_order_id?client_order_id=" + client_order_id;
@@ -80,7 +80,7 @@ std::pair<Status, Order> Client::getOrderByClientOrderID(const std::string& clie
   return std::make_pair(order.fromJSON(resp->body), order);
 }
 
-std::pair<Status, std::vector<Order>> Client::getOrders(const ActionStatus status,
+std::pair<Status, std::vector<Order>> Client::get_orders(const ActionStatus status,
                                                         const int limit,
                                                         const std::string& after,
                                                         const std::string& until,
@@ -140,7 +140,7 @@ std::pair<Status, std::vector<Order>> Client::getOrders(const ActionStatus statu
   return std::make_pair(Status(), orders);
 }
 
-std::pair<Status, Order> Client::submitOrder(const std::string& symbol,
+std::pair<Status, Order> Client::submit_order(const std::string& symbol,
                                              const int quantity,
                                              const OrderSide side,
                                              const OrderType type,
@@ -245,7 +245,7 @@ std::pair<Status, Order> Client::submitOrder(const std::string& symbol,
   return std::make_pair(order.fromJSON(resp->body), order);
 }
 
-std::pair<Status, Order> Client::replaceOrder(const std::string& id,
+std::pair<Status, Order> Client::replace_order(const std::string& id,
                                               const int quantity,
                                               const OrderTimeInForce tif,
                                               const std::string& limit_price,
@@ -304,7 +304,7 @@ std::pair<Status, Order> Client::replaceOrder(const std::string& id,
   return std::make_pair(order.fromJSON(resp->body), order);
 }
 
-std::pair<Status, std::vector<Order>> Client::cancelOrders() const {
+std::pair<Status, std::vector<Order>> Client::cancel_orders() const {
   std::vector<Order> orders;
 
   httplib::SSLClient client(environment_.getAPIBaseURL());
@@ -341,7 +341,7 @@ std::pair<Status, std::vector<Order>> Client::cancelOrders() const {
   return std::make_pair(Status(), orders);
 }
 
-std::pair<Status, Order> Client::cancelOrder(const std::string& id) const {
+std::pair<Status, Order> Client::cancel_order(const std::string& id) const {
   Order order;
 
   httplib::SSLClient client(environment_.getAPIBaseURL());
@@ -355,7 +355,7 @@ std::pair<Status, Order> Client::cancelOrder(const std::string& id) const {
   }
 
   if (resp->status == 204) {
-    return getOrder(id);
+    return get_order(id);
   }
 
   if (resp->status != 200) {

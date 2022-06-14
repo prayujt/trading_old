@@ -12,6 +12,7 @@ std::string orderDirectionToString(const OrderDirection direction) {
   case OrderDirection::Descending:
     return "desc";
   }
+  return "none";
 }
 
 std::string orderSideToString(const OrderSide side) {
@@ -21,6 +22,7 @@ std::string orderSideToString(const OrderSide side) {
   case OrderSide::Sell:
     return "sell";
   }
+  return "none";
 }
 
 std::string orderTypeToString(const OrderType type) {
@@ -34,6 +36,7 @@ std::string orderTypeToString(const OrderType type) {
   case OrderType::StopLimit:
     return "stop_limit";
   }
+  return "none";
 }
 
 std::string orderTimeInForceToString(const OrderTimeInForce tif) {
@@ -51,6 +54,7 @@ std::string orderTimeInForceToString(const OrderTimeInForce tif) {
   case OrderTimeInForce::FillOrKill:
     return "fok";
   }
+  return "none";
 }
 
 std::string orderClassToString(const OrderClass order_class) {
@@ -64,6 +68,7 @@ std::string orderClassToString(const OrderClass order_class) {
   case OrderClass::OneTriggersOther:
     return "oto";
   }
+  return "none";
 }
 
 Status Order::fromJSON(const std::string& json) {

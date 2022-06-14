@@ -36,7 +36,7 @@ class Client {
    */
   explicit Client() = delete;
 
-  std::pair<Status, std::vector<Order>> getOrders(const ActionStatus status = ActionStatus::Open,
+  std::pair<Status, std::vector<Order>> get_orders(const ActionStatus status = ActionStatus::Open,
                                                   const int limit = 50,
                                                   const std::string& after = "",
                                                   const std::string& until = "",
@@ -47,7 +47,7 @@ class Client {
    * @brief Fetch a specific Alpaca order.
    *
    * @code{.cpp}
-   *   auto resp = client.getOrder("6ad592c4-b3de-4517-a21c-13fdb184d65f");
+   *   auto resp = client.get_order("6ad592c4-b3de-4517-a21c-13fdb184d65f");
    *   if (auto status = resp.first; !status.ok()) {
    *     LOG(ERROR) << "Error getting order information: "
    *                << status.getMessage();
@@ -61,13 +61,13 @@ class Client {
    * success or faliure of the operation and the second element is an instance
    * of an alpaca::Order object.
    */
-  std::pair<Status, Order> getOrder(const std::string& id, const bool nested = false) const;
+  std::pair<Status, Order> get_order(const std::string& id, const bool nested = false) const;
 
   /**
    * @brief Fetch a specific Alpaca order by client order ID.
    *
    * @code{.cpp}
-   *   auto resp = client.getOrderByClientOrderID("13901840-34e2-4175-9f42-e3d0302ab0ad");
+   *   auto resp = client.get_order("13901840-34e2-4175-9f42-e3d0302ab0ad");
    *   if (auto status = resp.first; !status.ok()) {
    *     LOG(ERROR) << "Error getting order information: "
    *                << status.getMessage();
@@ -81,7 +81,7 @@ class Client {
    * success or faliure of the operation and the second element is an instance
    * of an alpaca::Order object.
    */
-  std::pair<Status, Order> getOrderByClientOrderID(const std::string& client_order_id) const;
+  std::pair<Status, Order> get_order_by_client_id(const std::string& client_order_id) const;
 
   /**
    * @brief Submit an Alpaca order.
@@ -107,7 +107,7 @@ class Client {
    * success or faliure of the operation and the second element is the newly
    * created alpaca::Order object.
    */
-  std::pair<Status, Order> submitOrder(const std::string& symbol,
+  std::pair<Status, Order> submit_order(const std::string& symbol,
                                        const int quantity,
                                        const OrderSide side,
                                        const OrderType type,
@@ -142,7 +142,7 @@ class Client {
    * success or faliure of the operation and the second element is the newly
    * created alpaca::Order object.
    */
-  std::pair<Status, Order> replaceOrder(const std::string& id,
+  std::pair<Status, Order> replace_order(const std::string& id,
                                         const int quantity,
                                         const OrderTimeInForce tif,
                                         const std::string& limit_price = "",
@@ -167,7 +167,7 @@ class Client {
    * success or faliure of the operation and the second element is a vector of
    * alpaca::Order objects.
    */
-  std::pair<Status, std::vector<Order>> cancelOrders() const;
+  std::pair<Status, std::vector<Order>> cancel_orders() const;
 
   /**
    * @brief Cancel a specific Alpaca order.
@@ -187,7 +187,7 @@ class Client {
    * success or faliure of the operation and the second element is an instance
    * of an alpaca::Order object.
    */
-  std::pair<Status, Order> cancelOrder(const std::string& id) const;
+  std::pair<Status, Order> cancel_order(const std::string& id) const;
 
  private:
   Environment environment_;

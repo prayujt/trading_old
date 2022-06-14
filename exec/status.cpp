@@ -13,5 +13,6 @@ std::string actionStatusToString(const ActionStatus status) {
   case ActionStatus::All:
     return "all";
   }
+  return "none";
 }
 } // namespace alpaca

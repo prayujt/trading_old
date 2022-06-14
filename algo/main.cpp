@@ -48,18 +48,24 @@ int main(int argc, char* argv[]) {
   cout << *bar << endl;
 
   auto env = alpaca::Environment();
-  if (auto status = env.parse(); !status.ok()) {
+  if (auto status = env.parse(); !status.ok())
+  {
     cerr << "Error parsing config from environment: " << status.getMessage() << endl;
     return status.getCode();
   }
   auto client = alpaca::Client(env);
 
   auto buy_response =
-      client.submitOrder("AAPL", 1, alpaca::OrderSide::Buy, alpaca::OrderType::Limit, alpaca::OrderTimeInForce::Day, "3.00");
+      client.submit_order("AAPL", 1, alpaca::OrderSide::Buy, alpaca::OrderType::Limit, alpaca::OrderTimeInForce::Day, "3.00");
 
-  if (auto status = buy_response.first; !status.ok()) {
+  if (auto status = buy_response.first; !status.ok())
+  {
     cerr << "Error submitting purchase order: " << status.getMessage() << endl;
-    return status.getCode();
+    cerr << status.getCode();
+  }
+  else
+  {
+    cout << client.get_order_by_client_id(buy_response.second.client_order_id).second.symbol << endl;
   }
 
   return 0;

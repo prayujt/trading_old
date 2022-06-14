@@ -1,7 +1,4 @@
 .token
 main
 main.dSYM
-alpaca/bazel-out
-alpaca/bazel-bin
-alpaca/bazel-alpaca
-alpaca/bazel-testlogs
+_objs
