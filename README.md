@@ -13,7 +13,7 @@ Requires the following environment variables to be set
 * `APCA_API_DATA_URL` -> url to stream market data from (optional, unless using Alpaca for data streaming)
 ## Build
 ### C++
-Requires make
+Simply run `make` to create an executable
 ## Dependencies
 ### C++
 * mongoc-driver
@@ -27,3 +27,5 @@ Requires make
 * asyncio
 * pymongo
 * tda-api
+## Credits
+Uses [marpaia's github repo](https://github.com/marpaia/alpaca-trade-api-cpp) to handle the HTTP requests to Alpaca's brokerage
