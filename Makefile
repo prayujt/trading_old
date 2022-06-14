@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -std=c++17 -w -g -I/usr/local/include/mongocxx/v_noabi -I/usr/local/include/bsoncxx/v_noabi -lmongocxx -lbsoncxx
+CFLAGS = -std=c++17 -w -g -I/usr/local/include/mongocxx/v_noabi -I/usr/local/include/bsoncxx/v_noabi -lmongocxx -lbsoncxx -lalpaca
 LIBS = -lssl -lcrypto -lglog
 # UNAME_S := $(shell uname -s)
 
@@ -16,9 +16,9 @@ MAKE_CMD = $(CC) $(CFLAGS) -o $(TARGET) $(SOURCES)
 	# MAKE_CMD += /usr/local/lib/libmongocxx.so /usr/local/lib/libbsoncxx.so
 # endif
 project:
-	$(MAKE_CMD) _objs/libalpaca.so
+	$(MAKE_CMD)
 all: library
-	$(MAKE_CMD) _objs/libalpaca.so
+	$(MAKE_CMD)
 library:
 	mkdir -p _objs
 	$(CC) $(LIBS) -c -fPIC -o _objs/order.o exec/order.cpp
@@ -26,6 +26,7 @@ library:
 	$(CC) $(LIBS) -c -fPIC -o _objs/config.o exec/config.cpp
 	$(CC) $(LIBS) -c -fPIC -o _objs/client.o exec/client.cpp
 	$(CC) $(LIBS) -shared -o _objs/libalpaca.so _objs/client.o _objs/config.o _objs/order.o _objs/status.o
+	sudo mv _objs/libalpaca.so /usr/local/lib
 clean:
 	rm -rf _objs
 	rm -f $(TARGET)
