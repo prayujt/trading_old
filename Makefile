@@ -1,9 +1,9 @@
 CC = g++
-CFLAGS = -std=c++17 -w -g -I/usr/local/include/mongocxx/v_noabi -I/usr/local/include/bsoncxx/v_noabi
+CFLAGS = -std=c++17 -w -g -I/usr/local/include/mongocxx/v_noabi -I/usr/local/include/bsoncxx/v_noabi -lssl -lcrypto -lglog
 UNAME_S := $(shell uname -s)
 
 TARGET = main
-SOURCES := database/*.cpp algo/*.cpp
+SOURCES := exec/*.cpp database/*.cpp algo/*.cpp
 
 ifeq ($(UNAME_S),Darwin)
 	CFLAGS += -lmongocxx -lbsoncxx

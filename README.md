@@ -13,13 +13,16 @@ Requires the following environment variables to be set
 * `APCA_API_DATA_URL` -> url to stream market data from (optional, unless using Alpaca for data streaming)
 ## Build
 ### C++
-Requires use of both make and the Bazel build system.  
+Requires make
 ## Dependencies
 ### C++
 * mongoc-driver
 * mongocxx
 * bsoncxx
-* alpaca-trading dependency handled by Bazel
+* libssl
+* libcrypto
+* rapidjson
+* glog
 ### Python
 * asyncio
 * pymongo

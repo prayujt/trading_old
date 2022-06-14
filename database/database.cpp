@@ -1,8 +1,8 @@
-#include "client.h"
+#include "database.h"
 #include <ctime>
 #include <fstream>
 
-Client::Client() {
+Database::Database() {
   string uri = getenv("MONGO_DB_URI");
   string database = getenv("MONGO_DB_DATABASE");
 
@@ -14,13 +14,13 @@ Client::Client() {
   string temp;
   while (getline(tickerFile, temp)) {
     if (temp != "") {
-      sma_bars[temp] = Client::Queue{50};
+      sma_bars[temp] = Database::Queue{50};
       update_bars(temp);
     }
   }
 }
 
-mongocxx::cursor Client::query_database(string collection_name, vector<QueryBase*> query) {
+mongocxx::cursor Database::query_database(string collection_name, vector<QueryBase*> query) {
   vector<bsoncxx::document::view> documents;
   mongocxx::collection collection = database_[collection_name];
   bsoncxx::builder::basic::document doc = document{};
@@ -47,7 +47,7 @@ mongocxx::cursor Client::query_database(string collection_name, vector<QueryBase
   return cursor;
 }
 
-void Client::update_bars(string ticker) {
+void Database::update_bars(string ticker) {
   Queue& _queue = sma_bars[ticker];
   if (_queue.size == 0) {
     Time timeObj;
@@ -71,17 +71,22 @@ void Client::update_bars(string ticker) {
       _queue.tail = newTail;
     }
     else {
-      Bar* remove = _queue.dequeue();
-      delete remove;
-      Bar* _new = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
-      _queue.enqueue(_new);
-      _queue.last_hour = timeObj._time[0];
-      _queue.last_min = timeObj._time[1];
+      // Time tempTime(_queue.last_hour, _queue.last_min);
+      // tempTime++;
+      // while (tempTime != timeObj) {
+        Bar* remove = _queue.dequeue();
+        delete remove;
+        Bar* _new = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
+        _queue.enqueue(_new);
+        _queue.last_hour = timeObj._time[0];
+        _queue.last_min = timeObj._time[1];
+        // tempTime++;
+      // }
     }
   }
 }
 
-Bar* Client::get_bar(string ticker, unsigned short hour, unsigned short minute) {
+Bar* Database::get_bar(string ticker, unsigned short hour, unsigned short minute) {
   vector<QueryBase*> query;
   Query<unsigned short>* hour_query = new Query<unsigned short>("HOUR", hour);
   Query<unsigned short>* minute_query = new Query<unsigned short>("MINUTE", minute);
@@ -116,7 +121,7 @@ Bar* Client::get_bar(string ticker, unsigned short hour, unsigned short minute) 
   else return NULL;
 }
 
-vector<Bar*> Client::get_bars(string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end) {
+vector<Bar*> Database::get_bars(string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end) {
   vector<Bar*> bars;
   unsigned short hour = hour_start;
   for (unsigned short i = minute_start; i <= ((hour_end - hour_start) * 60) + minute_end; i++) {
@@ -127,15 +132,15 @@ vector<Bar*> Client::get_bars(string ticker, unsigned short hour_start, unsigned
   return bars;
 }
 
-double Client::get_sma(string ticker, unsigned short offset, unsigned short hour, unsigned short minute) {
+double Database::get_sma(string ticker, unsigned short offset, unsigned short hour, unsigned short minute) {
   Time timeObj(hour, minute);
   unsigned short* time = timeObj._time;
   double sum = 0;
   unsigned short adjOffset = offset;
   update_bars(ticker);
-  Client::Queue _queue = sma_bars[ticker];
+  Database::Queue _queue = sma_bars[ticker];
   if (offset > _queue.max_size || offset > _queue.size) return 0;
-  Client::Queue::iterator iter = _queue.beginFromEnd();
+  Database::Queue::iterator iter = _queue.beginFromEnd();
   for (unsigned short i = 0; i < offset; i++) {
     Bar* bar = iter.value();
     timeObj--;
@@ -151,7 +156,7 @@ double Client::get_sma(string ticker, unsigned short offset, unsigned short hour
   return sum / adjOffset;
 }
 
-double Client::get_sma(string ticker, unsigned short offset) {
+double Database::get_sma(string ticker, unsigned short offset) {
   Time timeObj;
   return get_sma(ticker, offset, timeObj._time[0], timeObj._time[1]);
 }
@@ -202,11 +207,11 @@ Bar::Bar(string ticker_, unsigned short hour_, unsigned short minute_, double op
   high = high_;
 }
 
-Client::Queue::Queue(unsigned short _max_size) {
+Database::Queue::Queue(unsigned short _max_size) {
   max_size = _max_size;
 }
 
-Bar* Client::Queue::dequeue() {
+Bar* Database::Queue::dequeue() {
   Node* temp = head;
   if (head->next == NULL) {
     head = NULL;
@@ -218,7 +223,7 @@ Bar* Client::Queue::dequeue() {
   return temp->value;
 }
 
-void Client::Queue::enqueueHead(Bar* _bar) {
+void Database::Queue::enqueueHead(Bar* _bar) {
   size++;
   if (head == NULL && tail == NULL) {
     head = new Node(_bar);
@@ -231,7 +236,7 @@ void Client::Queue::enqueueHead(Bar* _bar) {
   head = temp;
 }
 
-void Client::Queue::enqueue(Bar* _bar) {
+void Database::Queue::enqueue(Bar* _bar) {
   size++;
   if (head == NULL && tail == NULL) {
     head = new Node(_bar);
@@ -244,47 +249,55 @@ void Client::Queue::enqueue(Bar* _bar) {
   tail = temp;
 }
 
-Bar* Client::Queue::peek() {
+Bar* Database::Queue::peek() {
   return head->value;
 }
 
-bool Client::Queue::isEmpty() {
+bool Database::Queue::isEmpty() {
   return size == 0;
 }
 
-bool Client::Queue::isFull() {
+bool Database::Queue::isFull() {
   return size == max_size;
 }
 
-Client::Queue::iterator Client::Queue::begin() {
-  return Client::Queue::iterator(head);
+Database::Queue::iterator Database::Queue::begin() {
+  return Database::Queue::iterator(head);
 }
 
-Client::Queue::iterator Client::Queue::beginFromEnd() {
-  return Client::Queue::iterator(tail);
+Database::Queue::iterator Database::Queue::beginFromEnd() {
+  return Database::Queue::iterator(tail);
 }
 
-Client::Queue::iterator Client::Queue::end() {
-  return Client::Queue::iterator(NULL);
+Database::Queue::iterator Database::Queue::end() {
+  return Database::Queue::iterator(NULL);
 }
 
-Bar* Client::Queue::iterator::value() {
+Bar* Database::Queue::iterator::value() {
   if (node == NULL) return NULL;
   return node->value;
 }
 
-void Client::Queue::iterator::operator++(int value) {
+void Database::Queue::iterator::operator++(int value) {
   node = node->next;
 }
 
-void Client::Queue::iterator::operator--(int value) {
+void Database::Queue::iterator::operator--(int value) {
   node = node->prev;
 }
 
-bool Client::Queue::iterator::operator==(iterator second) {
+bool Database::Queue::iterator::operator==(iterator second) {
   return value() == second.value();
 }
 
-bool Client::Queue::iterator::operator!=(iterator second) {
+bool Database::Queue::iterator::operator!=(iterator second) {
   return value() != second.value();
+}
+
+bool Time::operator==(Time second) {
+  return _time[0] == second._time[0] && _time[1] == second._time[1];
+}
+
+bool Time::operator!=(Time second) {
+  return !(*this == second);
 }

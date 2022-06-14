@@ -1,3 +1,6 @@
+#ifndef DATABASE_H_
+#define DATABASE_H_
+
 #include <stdlib.h>
 #include <string>
 #include <iostream>
@@ -79,7 +82,7 @@ struct Bar {
   Bar(string ticker, unsigned short hour, unsigned short minute, double open, double close, double low, double high);
 };
 
-struct Client {
+struct Database {
   struct Queue {
     struct Node {
       Node* prev;
@@ -143,13 +146,15 @@ struct Client {
 
   mongocxx::cursor query_database(string collection_name, vector<QueryBase*> query);
 
-  Client();
+  Database();
 };
 
 struct Time {
   unsigned short _time[3];
   void operator++(int);
   void operator--(int);
+  bool operator==(Time);
+  bool operator!=(Time);
   Time();
   Time(unsigned short hour, unsigned short minute);
   Time(unsigned short hour, unsigned short minute, unsigned short second);
@@ -189,3 +194,5 @@ void parse_query(QueryBase* query, bsoncxx::builder::basic::document* doc) {
       break;
   }
 }
+
+#endif // DATABASE_H_
