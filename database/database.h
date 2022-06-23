@@ -122,7 +122,7 @@ struct Database {
     bool isFull();
 
     iterator begin();
-    iterator beginFromEnd();
+    iterator begin_from_end();
     iterator end();
 
     Queue(unsigned short max_size);
@@ -133,20 +133,25 @@ struct Database {
   mongocxx::client client_;
   mongocxx::database database_;
 
-  unordered_map<string, Queue> sma_bars;
-  // Queue sma_bars{128};
+  // unordered_map<string, Queue> sma_bars;
+  Queue sma_bars{64};
 
   Bar* get_bar(string ticker, unsigned short hour, unsigned short minute);
   vector<Bar*> get_bars(string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end);
 
-  double get_sma(string ticker, unsigned short offset, unsigned short hour, unsigned short minute);
   double get_sma(string ticker, unsigned short offset);
+  double get_ema(string ticker, unsigned short offset);
+
+  double get_macd(string ticker);
 
   void update_bars(string ticker);
 
   mongocxx::cursor query_database(string collection_name, vector<QueryBase*> query);
 
-  Database();
+  Database(string ticker);
+
+  private:
+    double get_ema(string ticker, unsigned short offset, unsigned short adjOffset, Database::Queue::iterator iter);
 };
 
 struct Time {

@@ -2,7 +2,7 @@
 #include <ctime>
 #include <fstream>
 
-Database::Database() {
+Database::Database(string ticker) {
   string uri = getenv("MONGO_DB_URI");
   string database = getenv("MONGO_DB_DATABASE");
 
@@ -10,21 +10,25 @@ Database::Database() {
     mongocxx::uri{uri}
   };
   database_ = client_[database];
-  ifstream tickerFile("tickers");
-  string temp;
-  while (getline(tickerFile, temp)) {
-    if (temp != "") {
-      sma_bars[temp] = Database::Queue{50};
-      update_bars(temp);
-    }
-  }
+  // ifstream tickerFile("tickers");
+  // string temp;
+  // while (getline(tickerFile, temp)) {
+    // if (temp != "") {
+  // sma_bars = Database::Queue{50};
+  update_bars(ticker);
+      // sma_bars[temp] = Database::Queue{50};
+      // update_bars(temp);
+    // }
+  // }
 }
 
-mongocxx::cursor Database::query_database(string collection_name, vector<QueryBase*> query) {
+mongocxx::cursor Database::query_database(string collection_name, vector<QueryBase*> query)
+{
   vector<bsoncxx::document::view> documents;
   mongocxx::collection collection = database_[collection_name];
   bsoncxx::builder::basic::document doc = document{};
-  for (unsigned int i = 0; i < query.size(); i++) {
+  for (unsigned int i = 0; i < query.size(); i++)
+  {
     QueryBase* _query = query[i];
     unsigned int type = _query->query_type;
     switch (type) {
@@ -47,41 +51,41 @@ mongocxx::cursor Database::query_database(string collection_name, vector<QueryBa
   return cursor;
 }
 
-void Database::update_bars(string ticker) {
-  Queue& _queue = sma_bars[ticker];
-  if (_queue.size == 0) {
+void Database::update_bars(string ticker)
+{
+  if (sma_bars.size < sma_bars.max_size)
+  {
     Time timeObj;
     timeObj--;
     Bar* temp = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
-    unsigned short counter = 0;
-    while (temp != NULL && counter < _queue.max_size) {
-      _queue.enqueueHead(temp);
+    unsigned short counter = sma_bars.size;
+    while (temp != NULL && counter < sma_bars.max_size)
+    {
+      sma_bars.enqueueHead(temp);
       timeObj--;
       temp = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
       counter++;
     }
   }
-  else {
+  else
+  {
     Time timeObj;
-    if (timeObj._time[0] == _queue.last_hour && timeObj._time[1] == _queue.last_min) {
-      Queue::Node* temp = (_queue.tail)->prev;
-      Queue::Node* newTail = new Queue::Node(temp, get_bar(ticker, _queue.last_hour, _queue.last_min));
-      delete _queue.tail;
+    if (timeObj._time[0] == sma_bars.last_hour && timeObj._time[1] == sma_bars.last_min) {
+      Queue::Node* temp = (sma_bars.tail)->prev;
+      Queue::Node* newTail = new Queue::Node(temp, get_bar(ticker, sma_bars.last_hour, sma_bars.last_min));
+      delete sma_bars.tail;
       temp->next = newTail;
-      _queue.tail = newTail;
+      sma_bars.tail = newTail;
     }
-    else {
-      // Time tempTime(_queue.last_hour, _queue.last_min);
-      // tempTime++;
-      // while (tempTime != timeObj) {
-        Bar* remove = _queue.dequeue();
+    else
+    {
+        Bar* remove = sma_bars.dequeue();
         delete remove;
         Bar* _new = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
-        _queue.enqueue(_new);
-        _queue.last_hour = timeObj._time[0];
-        _queue.last_min = timeObj._time[1];
-        // tempTime++;
-      // }
+        if (_new == NULL) return;
+        sma_bars.enqueue(_new);
+        sma_bars.last_hour = timeObj._time[0];
+        sma_bars.last_min = timeObj._time[1];
     }
   }
 }
@@ -121,7 +125,8 @@ Bar* Database::get_bar(string ticker, unsigned short hour, unsigned short minute
   else return NULL;
 }
 
-vector<Bar*> Database::get_bars(string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end) {
+vector<Bar*> Database::get_bars(string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end)
+{
   vector<Bar*> bars;
   unsigned short hour = hour_start;
   for (unsigned short i = minute_start; i <= ((hour_end - hour_start) * 60) + minute_end; i++) {
@@ -132,33 +137,34 @@ vector<Bar*> Database::get_bars(string ticker, unsigned short hour_start, unsign
   return bars;
 }
 
-double Database::get_sma(string ticker, unsigned short offset, unsigned short hour, unsigned short minute) {
-  Time timeObj(hour, minute);
-  unsigned short* time = timeObj._time;
+double Database::get_sma(string ticker, unsigned short offset)
+{
   double sum = 0;
-  unsigned short adjOffset = offset;
   update_bars(ticker);
-  Database::Queue _queue = sma_bars[ticker];
-  if (offset > _queue.max_size || offset > _queue.size) return 0;
-  Database::Queue::iterator iter = _queue.beginFromEnd();
+  if (offset > sma_bars.max_size || offset > sma_bars.size) return 0;
+  Database::Queue::iterator iter = sma_bars.begin_from_end();
   for (unsigned short i = 0; i < offset; i++) {
     Bar* bar = iter.value();
-    timeObj--;
     if (bar == NULL) {
-      cout << time[0] << ":" << time[1] << endl;
       return 0;
-      // adjOffset--;
-      // continue;
     }
     sum += bar->close;
     iter--;
   }
-  return sum / adjOffset;
+  return sum / offset;
 }
 
-double Database::get_sma(string ticker, unsigned short offset) {
-  Time timeObj;
-  return get_sma(ticker, offset, timeObj._time[0], timeObj._time[1]);
+double Database::get_ema(string ticker, unsigned short offset)
+{
+  if (offset > sma_bars.max_size || offset > sma_bars.size) return 0;
+  return get_ema(ticker, offset, offset, sma_bars.begin_from_end());
+}
+
+double Database::get_ema(string ticker, unsigned short offset, unsigned short adjOffset, Database::Queue::iterator iter)
+{
+  double price = iter.value()->close;
+  iter--;
+  return price * (2 / (offset + 1)) + get_ema(ticker, offset, --adjOffset, iter);
 }
 
 Time::Time() {
@@ -265,7 +271,7 @@ Database::Queue::iterator Database::Queue::begin() {
   return Database::Queue::iterator(head);
 }
 
-Database::Queue::iterator Database::Queue::beginFromEnd() {
+Database::Queue::iterator Database::Queue::begin_from_end() {
   return Database::Queue::iterator(tail);
 }
 
