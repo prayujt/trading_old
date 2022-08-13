@@ -40,9 +40,9 @@ int main(int argc, char* argv[])
   while (database.sma_bars.size != database.sma_bars.max_size) {}
   while (1)
   {
-    // database.update_bars(ticker);
-    // cout << *(database.sma_bars.begin().value());
-    cout << database.get_sma(ticker, 64) << endl;
+    cout << database.calculate_rsi(ticker) << endl;
+    cout << database.calculate_macd(ticker) << endl;
+    break;
   }
   // auto env = alpaca::Environment();
   // if (auto status = env.parse(); !status.ok())

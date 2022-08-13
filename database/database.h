@@ -7,6 +7,9 @@
 #include <unordered_map>
 #include <vector>
 #include <limits>
+#include <cmath>
+#include <ctime>
+#include <fstream>
 
 #include <mongocxx/client.hpp>
 #include <mongocxx/stdx.hpp>
@@ -139,10 +142,10 @@ struct Database {
   Bar* get_bar(string ticker, unsigned short hour, unsigned short minute);
   vector<Bar*> get_bars(string ticker, unsigned short hour_start, unsigned short hour_end, unsigned short minute_start, unsigned short minute_end);
 
-  double get_sma(string ticker, unsigned short offset);
-  double get_ema(string ticker, unsigned short offset);
-
-  double get_macd(string ticker);
+  double calculate_sma(string ticker, unsigned short offset);
+  double calculate_ema(string ticker, unsigned short offset);
+  double calculate_macd(string ticker);
+  double calculate_rsi(string ticker);
 
   void update_bars(string ticker);
 
@@ -151,7 +154,8 @@ struct Database {
   Database(string ticker);
 
   private:
-    double get_ema(string ticker, unsigned short offset, unsigned short adjOffset, Database::Queue::iterator iter);
+    double calculate_ema(string ticker, unsigned short offset, short adjOffset, Database::Queue::iterator iter);
+    double calculate_macd(string ticker, short adjOffset, Database::Queue::iterator iter);
 };
 
 struct Time {

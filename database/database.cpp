@@ -1,6 +1,4 @@
 #include "database.h"
-#include <ctime>
-#include <fstream>
 
 Database::Database(string ticker) {
   string uri = getenv("MONGO_DB_URI");
@@ -57,6 +55,10 @@ void Database::update_bars(string ticker)
   {
     Time timeObj;
     timeObj--;
+    if (timeObj._time[0] >= 16 || timeObj._time[0] < 9)
+    {
+      timeObj = Time(13, 3);
+    }
     Bar* temp = get_bar(ticker, timeObj._time[0], timeObj._time[1]);
     unsigned short counter = sma_bars.size;
     while (temp != NULL && counter < sma_bars.max_size)
@@ -90,7 +92,8 @@ void Database::update_bars(string ticker)
   }
 }
 
-Bar* Database::get_bar(string ticker, unsigned short hour, unsigned short minute) {
+Bar* Database::get_bar(string ticker, unsigned short hour, unsigned short minute)
+{
   vector<QueryBase*> query;
   Query<unsigned short>* hour_query = new Query<unsigned short>("HOUR", hour);
   Query<unsigned short>* minute_query = new Query<unsigned short>("MINUTE", minute);
@@ -137,7 +140,7 @@ vector<Bar*> Database::get_bars(string ticker, unsigned short hour_start, unsign
   return bars;
 }
 
-double Database::get_sma(string ticker, unsigned short offset)
+double Database::calculate_sma(string ticker, unsigned short offset)
 {
   double sum = 0;
   update_bars(ticker);
@@ -154,17 +157,86 @@ double Database::get_sma(string ticker, unsigned short offset)
   return sum / offset;
 }
 
-double Database::get_ema(string ticker, unsigned short offset)
+double Database::calculate_ema(string ticker, unsigned short offset)
 {
+  update_bars(ticker);
   if (offset > sma_bars.max_size || offset > sma_bars.size) return 0;
-  return get_ema(ticker, offset, offset, sma_bars.begin_from_end());
+  return calculate_ema(ticker, offset, offset, sma_bars.begin_from_end());
 }
 
-double Database::get_ema(string ticker, unsigned short offset, unsigned short adjOffset, Database::Queue::iterator iter)
+double Database::calculate_ema(string ticker, unsigned short offset, short adjOffset, Database::Queue::iterator iter)
 {
+  if (adjOffset == 0) return 0;
   double price = iter.value()->close;
+  // cout << adjOffset << ":" << price << endl;
   iter--;
-  return price * (2 / (offset + 1)) + get_ema(ticker, offset, --adjOffset, iter);
+  return adjOffset == 1 ? price : price * (2.0/(offset + 1)) + calculate_ema(ticker, offset, --adjOffset, iter) * (1.0-2.0/(offset+1));
+}
+
+double Database::calculate_macd(string ticker)
+{
+  // cout << "12: " << calculate_ema(ticker, 12) << endl;
+  // cout << "26: " << calculate_ema(ticker, 26) << endl;
+  cout << "diff: " << calculate_ema(ticker, 12) - calculate_ema(ticker, 26) << endl;
+  cout << "diff2: " << calculate_macd(ticker, 9, sma_bars.begin_from_end()) << endl;;
+  update_bars(ticker);
+  return calculate_ema(ticker, 12) - calculate_ema(ticker, 26) - calculate_macd(ticker, 9, sma_bars.begin_from_end());
+}
+
+double Database::calculate_macd(string ticker, short adjOffset, Database::Queue::iterator iter)
+{
+  if (adjOffset == 0) return 0;
+  double diff = calculate_ema(ticker, 12, 12, iter) - calculate_ema(ticker, 26, 26, iter);
+  // cout << "diff: " << diff << endl;
+  iter--;
+  double value = adjOffset == 1 ? diff : diff * 0.2 + calculate_macd(ticker, --adjOffset, iter) * 0.8;
+  // cout << value << endl;
+  return value;
+}
+
+double Database::calculate_rsi(string ticker)
+{
+  double up_sum;
+  double down_sum;
+
+  vector<double> up_moves;
+  vector<double> down_moves;
+
+  auto iter = sma_bars.begin_from_end();
+  unsigned int count = 0;
+  while (count < 13) {
+    double price1 = iter.value()->close;
+    iter--;
+    double price2 = iter.value()->close;
+    // cout << price1 << ", " << price2 << endl;
+    double diff = price1 - price2;
+    // cout << diff << endl;
+    if (diff < 0) {
+      down_sum += abs(diff);
+      down_moves.push_back(abs(diff));
+      up_moves.push_back(0);
+    }
+    else {
+      up_sum += diff;
+      up_moves.push_back(diff);
+      down_moves.push_back(0);
+    }
+    count++;
+  }
+
+  double up_avg = up_sum / 14.0;
+  double down_avg = down_sum / 14.0;
+
+  // double up_avg = up_moves[up_moves.size()-1];
+  // double down_avg = down_moves[down_moves.size()-1];
+  // double SCALE_FACTOR = 1.0/14.0;
+
+  // for (int i = up_moves.size() - 2; i > 0; i--) up_avg = up_avg * (1.0 - SCALE_FACTOR) + SCALE_FACTOR * up_moves[i];
+  // for (int i = down_moves.size() - 2; i > 0; i--) down_avg = down_avg * (1.0 - SCALE_FACTOR) + SCALE_FACTOR * down_moves[i];
+
+  cout << up_avg << endl;
+  cout << down_avg << endl;
+  return 100.0 - 100.0 / (1.0 + (double) (up_avg / down_avg));
 }
 
 Time::Time() {

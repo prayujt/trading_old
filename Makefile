@@ -15,6 +15,7 @@ MAKE_CMD = $(CC) $(CFLAGS) -o $(TARGET) $(SOURCES)
 # ifeq ($(UNAME_S),Linux)
 	# MAKE_CMD += /usr/local/lib/libmongocxx.so /usr/local/lib/libbsoncxx.so
 # endif
+#
 project:
 	$(MAKE_CMD)
 all: library
