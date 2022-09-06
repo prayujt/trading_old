@@ -164,6 +164,8 @@ struct Time {
   void operator--(int);
   bool operator==(Time);
   bool operator!=(Time);
+  bool operator<(Time);
+  bool operator>(Time);
   Time();
   Time(unsigned short hour, unsigned short minute);
   Time(unsigned short hour, unsigned short minute, unsigned short second);

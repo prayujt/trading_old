@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
-#include <thread>
 
 using namespace std;
 
@@ -21,6 +20,11 @@ ostream &operator<<(ostream &os, Time* const &time)
   return os << time->_time[0] << ":" << time->_time[1] << ":" << time->_time[2] << endl;
 }
 
+struct memory_struct{
+  char* buffer;
+  size_t size;
+};
+
 // void algo(string ticker, Database* database)
 // {
 //   // Bar* bar = database->get_bar(ticker, 9, 32);
@@ -34,16 +38,33 @@ ostream &operator<<(ostream &os, Time* const &time)
 
 int main(int argc, char* argv[])
 {
+
   string ticker = argv[1];
   Database database(ticker);
 
-  while (database.sma_bars.size != database.sma_bars.max_size) {}
+  while (database.sma_bars.size != database.sma_bars.max_size)
+  {
+    cout << "loading..." << endl;
+    database.update_bars(ticker);
+  }
+  bool bought = false;
   while (1)
   {
-    cout << database.calculate_rsi(ticker) << endl;
-    cout << database.calculate_macd(ticker) << endl;
-    break;
+    double rsi = database.calculate_rsi(ticker);
+    double macd = database.calculate_macd(ticker);
+    if (rsi < 30 && macd < -0.025 && !bought)
+    {
+      string msg = "curl -X POST -H \"Content-Type: application/json\" -d '{\"value1\":\"Bought " + ticker + " at " + to_string(database.sma_bars.peek()->close) + "\"}' https://maker.ifttt.com/trigger/notify/with/key/co2pjtO4l9SKFTkaXMYz6H -o /dev/null -s";
+      system(msg.c_str());
+      cout << "bought" << endl;
+      bought = true;
+    }
+    if (rsi > 40) bought = false;
+    cout << "RSI: " << rsi << endl;
+    cout << "MACD: " << macd << endl << endl;
+    // cout << "Last Bar: " << endl << *(database.sma_bars.peek()) << endl;
   }
+
   // auto env = alpaca::Environment();
   // if (auto status = env.parse(); !status.ok())
   // {
